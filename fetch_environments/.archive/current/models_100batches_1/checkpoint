@@ -1,0 +1,2 @@
+model_checkpoint_path: "/Users/maltemosbach/git/HAC_fetch/fetch_environments/current/models/HAC.ckpt-99"
+all_model_checkpoint_paths: "/Users/maltemosbach/git/HAC_fetch/fetch_environments/current/models/HAC.ckpt-99"
