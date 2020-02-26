@@ -46,4 +46,4 @@ Pods
 xcuserdata
 
 # Tensorboard 
-events.out.*
+*events.out.*

@@ -1,1 +1,0 @@
-{"ac_n": 0.2, "run": 2, "replay_k": 8, "use_target": false, "sg_n": 0.1}
