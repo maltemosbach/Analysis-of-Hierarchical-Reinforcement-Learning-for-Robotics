@@ -54,7 +54,7 @@ for m in range(len(combinations["run"])*len(combinations["use_target"])*len(comb
 
     logdir = "./tb/" + date + hp_dir
     modeldir = "./saved_agents/" + hp_dir + "models"
-    # To set session as default
+
     #sess = tf.compat.v1.Session().__enter__()
     sess = tf.compat.v1.InteractiveSession()
     writer_graph = tf.compat.v1.summary.FileWriter(logdir)
@@ -78,6 +78,8 @@ for m in range(len(combinations["run"])*len(combinations["use_target"])*len(comb
     save_model = False
     if save_model:
         shutil.move("./models", modeldir)
+
+
 
     sess.close()
     tf.compat.v1.reset_default_graph()

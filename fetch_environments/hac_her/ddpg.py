@@ -8,6 +8,7 @@ from baselines import logger
 from baselines.her.util import (
     import_function, store_args, flatten_grads, transitions_in_episode_batch, convert_episode_to_batch_major)
 from baselines.common.mpi_adam import MpiAdam
+from baselines.common import tf_util
 
 # Helper function
 def dims_to_shapes(input_dims):
@@ -228,6 +229,9 @@ class DDPG():
         # Batch should have the form [g, o, u, o_2, g_2, r]
         return transitions_batch
 
+    def save(self, save_path):
+            tf_util.save_variables(save_path)
+
 
     def stage_batch(self, batch=None):
         if batch is None:
@@ -356,6 +360,25 @@ class DDPG():
         res = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.scope + '/' + scope)
         assert len(res) > 0
         return res
+
+
+
+
+    def __setstate__(self, state):
+        if 'sample_transitions' not in state:
+            # We don't need this for playing the policy.
+            state['sample_transitions'] = None
+
+        self.__init__(**state)
+        # set up stats (they are overwritten in __init__)
+        for k, v in state.items():
+            if k[-6:] == '_stats':
+                self.__dict__[k] = v
+        # load TF variables
+        vars = [x for x in self._global_vars('') if 'buffer' not in x.name]
+        assert(len(vars) == len(state["tf"]))
+        node = [tf.assign(var, val) for var, val in zip(vars, state["tf"])]
+        self.sess.run(node)
 
 
 

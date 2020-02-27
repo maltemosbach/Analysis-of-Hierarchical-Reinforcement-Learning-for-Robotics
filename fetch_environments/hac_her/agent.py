@@ -6,6 +6,8 @@ import tensorflow as tf
 import os
 from tensorboardX import SummaryWriter
 
+from play import main
+
 def goal_distance(goal_a, goal_b):
     assert goal_a.shape == goal_b.shape
     return np.linalg.norm(goal_a - goal_b, axis=-1)
@@ -125,12 +127,21 @@ class Agent():
         # If not retraining, restore weights
         # if we are not retraining from scratch, just restore weights
         if self.FLAGS.retrain == False:
-            self.saver.restore(self.sess, tf.train.latest_checkpoint(self.model_dir))
+            pass
+            #print("not retrain is called --> load policy")
+            #self.saver.restore(self.sess, tf.train.latest_checkpoint(self.model_dir))
+            #for i in range(len(self.layers)):
+            #    self.layers[i].policy.__setstate__("./models_saved")
+
 
 
     # Save neural network parameters
     def save_model(self, episode):
-        self.saver.save(self.sess, self.model_loc, global_step=episode)
+        pass
+        #self.saver.save(self.sess, self.model_loc, global_step=episode)
+        #save_path = "./models_saved"
+        #for i in range(len(self.layers)):
+        #    self.layers[i].policy.save(save_path)
 
 
     # Update actor and critic networks for each layer

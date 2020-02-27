@@ -69,9 +69,23 @@ def run_HAC(FLAGS,env,agent,writer,sess):
 
             print("\n--- END TESTING ---\n")
 
-            
 
-    
+
+    if FLAGS.play:
+        input("Press enter to show what the agent has learned")
+        agent.FLAGS.test = True
+        env.visualize = True
+        for episode in range(1000):
+            
+            print("\nEpisode %d" % (episode))
+            
+            # Train for an episode
+            success = agent.train(env, episode)
+
+            if success:
+                print("Batch %d, Episode %d End Goal Achieved\n" % (batch, episode))
+
+
     
 
      

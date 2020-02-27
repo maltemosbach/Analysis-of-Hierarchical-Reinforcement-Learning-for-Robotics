@@ -118,6 +118,12 @@ def parse_options():
         help='Include to use tensorboard'
     )
 
+    parser.add_argument(
+        '--play',
+        action='store_true',
+        help='Include to show what the agent has learned'
+    )
+
     FLAGS, unparsed = parser.parse_known_args()
 
 
