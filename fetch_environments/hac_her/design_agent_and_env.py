@@ -111,7 +111,8 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
     agent_params["subgoal_noise"] = [hparams["sg_n"] for i in range(len(subgoal_thresholds))]
 
     # Define number of episodes of transitions to be stored by each level of the hierarchy
-    agent_params["episodes_to_store"] = 1000
+    # To store up to 1.000.000 transitions this should be >= 20.000
+    agent_params["episodes_to_store"] = 20000
 
     # Provide training schedule for agent.  Training by default will alternate between exploration and testing.  Hyperparameter below indicates number of exploration episodes.  Testing occurs for 100 episodes.  To change number of testing episodes, go to "ran_HAC.py".
     agent_params["num_exploration_episodes"] = 10
