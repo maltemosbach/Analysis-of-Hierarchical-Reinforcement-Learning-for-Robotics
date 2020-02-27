@@ -9,7 +9,7 @@ from baselines.her.util import (
     import_function, store_args, flatten_grads, transitions_in_episode_batch, convert_episode_to_batch_major)
 from baselines.common.mpi_adam import MpiAdam
 
-
+# Helper function
 def dims_to_shapes(input_dims):
     return {key: tuple([val]) if val > 0 else tuple() for key, val in input_dims.items()}
 
@@ -18,6 +18,16 @@ class DDPG():
 
     def __init__(self, sess, writer, env, hparams, batch_size, replay_buffer, layer_number, FLAGS, hidden, layers, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
         gamma=0.98, action_l2=1.0, norm_eps=0.01, norm_clip=5, clip_obs=200):
+
+        """The new DDPG policy used inside the HAC algorithm
+        Args:
+            sess: tensorflow session
+            writer: summary writer
+            hparams: hyperparameters from initialize HAC
+            replay_buffer: experience buffer from original HAC implementation
+            norm_eps: epsilon in normalizer
+            ...
+        """
 
         self.sess = sess
         self.writer = writer
@@ -38,24 +48,13 @@ class DDPG():
         self.action_l2 = action_l2
         self.clip_obs = clip_obs
 
-
-
         self.scope = "ddpg_layer_" + str(layer_number)
 
-
-
-        self.buffer_size = 1000000
-
-
+        # index used in logging and debugging
         self.ind = 0
-        self.i = 0
-
-
-
 
 
         self.input_dims = {"o" : 0, "g" : 0, "u" : 0}
-
 
         self.state_dim = env.state_dim
         self.input_dims["o"] = env.state_dim
@@ -71,8 +70,10 @@ class DDPG():
         # Determine range of actor network outputs.  This will be used to configure outer layer of neural network
         if layer_number == 0:
             self.action_space_bounds = env.action_bounds
-            self.action_offset = env.action_offset
-            self.max_u = env.action_bounds[0]
+            self.u_offset = env.action_offset
+            self.max_u = env.action_bounds
+            #print('self.max_u:', self.max_u)
+            #print('self.u_offset:', self.u_offset)
         else:
             # Determine symmetric range of subgoal space and offset
             self.action_space_bounds = env.subgoal_bounds_symmetric
@@ -116,15 +117,139 @@ class DDPG():
             self._create_network(self.input_dims)
 
 
+    # Return main or target actions for given observation and goal
+    def get_actions(self, o, g, use_target_net=False):
+
+        policy = self.target if use_target_net else self.main
+        # values to compute
+        vals = [policy.pi_tf]
+
+        # feed
+        feed = {
+            policy.o_tf: o.reshape(-1, self.dimo),
+            policy.g_tf: g.reshape(-1, self.dimg),
+            policy.u_tf: np.zeros((o.size // self.dimo, self.dimu), dtype=np.float32)
+        }
+
+        ret = self.sess.run(vals, feed_dict=feed)
+        #print('self.logs():', self.logs())
+
+        while len(ret) == 1:
+            ret = ret[0]
+        return ret
 
 
+    # Return Q-Values for given observation, goal and action taken
+    def get_Q_values(self, o, g, u, use_target_net=False):
+
+        policy = self.target if use_target_net else self.main
+        # values to compute
+        vals = [policy.Q_pi_tf]
+
+        # feed
+        feed = {
+            policy.o_tf: o.reshape(-1, self.dimo),
+            policy.g_tf: g.reshape(-1, self.dimg),
+            policy.u_tf: u.reshape(-1, self.dimu)
+        }
+
+        ret = self.sess.run(vals, feed_dict=feed)
+
+        if len(ret) == 1:
+            return ret[0]
+        else:
+            return ret
 
 
+    # Get stats of normalizers
+    def logs(self, prefix=''):
+        logs = []
+        logs += [('stats_o/mean', np.mean(self.sess.run([self.o_stats.mean])))]
+        logs += [('stats_o/std', np.mean(self.sess.run([self.o_stats.std])))]
+        logs += [('stats_g/mean', np.mean(self.sess.run([self.g_stats.mean])))]
+        logs += [('stats_g/std', np.mean(self.sess.run([self.g_stats.std])))]
 
+        if prefix != '' and not prefix.endswith('/'):
+            return [(prefix + '/' + key, val) for key, val in logs]
+        else:
+            return logs
+
+
+    # Get batch from original experience buffer in the form of the HER replay buffer
+    def sample_batch(self, update_stats=True):
+        if self.replay_buffer.size >= self.batch_size:
+            old_states, actions, rewards, new_states, goals, is_terminals = self.replay_buffer.get_batch()
+
+            transitions = {}
+            transitions["g"] = goals
+            transitions["o"] = old_states
+            transitions["u"] = actions
+            transitions["o_2"] = new_states
+            transitions["g_2"] = goals
+            transitions["r"] = rewards
+
+            o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
+            transitions["o"], transitions["g"] = self._preprocess_og(o, g)
+            transitions["o_2"], transitions["g_2"] = self._preprocess_og(o_2, g)
+            #transitions_batch = [goals, old_states, actions, new_states, goals, rewards]
+
+            if update_stats:
+                self.o_stats.update(transitions['o'])
+                self.g_stats.update(transitions['g'])
+
+                self.o_stats.recompute_stats()
+                self.g_stats.recompute_stats()
+
+            transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
+            '''
+            f= open("/Users/maltemosbach/Desktop/transitions_hac.txt","a+")
+            #f.write("self.buffer.get_current_size(): " + str(self.buffer.get_current_size()) + "\n")
+            f.write("self.stage_shapes.keys(): " + str(self.stage_shapes.keys()) + "\n")
+            f.write("Batch no. " + str(self.ind) + " \n")
+            f.write("Batch size: " + str(self.batch_size) + " \n")
+            f.write("str(len(transitions['g'])): " + str(len(transitions['g'])) + " \n")
+            f.write("transitions['g']: " + str(transitions['g']) + "\n")
+            f.write("str(len(transitions['o'])): " + str(len(transitions['o'])) + " \n")
+            f.write("transitions['o']: " + str(transitions['o']) + "\n")
+            f.write("str(len(transitions['u'])): " + str(len(transitions['u'])) + " \n")
+            f.write("transitions['u']: " + str(transitions['u']) + "\n")
+            f.write("str(len(transitions['o_2'])): " + str(len(transitions['o_2'])) + " \n")
+            f.write("transitions['o_2']: " + str(transitions['o_2']) + "\n")
+            f.write("str(len(transitions['g_2'])): " + str(len(transitions['g_2'])) + " \n")
+            f.write("transitions['g_2']: " + str(transitions['g_2']) + "\n")
+            f.write("str(len(transitions['r'])): " + str(len(transitions['r'])) + " \n")
+            f.write("transitions['r']: " + str(transitions['r']) + "\n")
+            '''
+            self.ind += 1
+
+        else:
+            assert False, "Sample_batch should only be called with enough transitions in the replay_buffer"
+
+        # Batch should have the form [g, o, u, o_2, g_2, r]
+        return transitions_batch
+
+
+    def stage_batch(self, batch=None):
+        if batch is None:
+            batch = self.sample_batch()
+        assert len(self.buffer_ph_tf) == len(batch)
+        self.sess.run(self.stage_op, feed_dict=dict(zip(self.buffer_ph_tf, batch)))
+
+
+    def train(self, stage=True):
+        if stage:
+            self.stage_batch()
+        critic_loss, actor_loss, Q_grad, pi_grad = self._grads()
+        self._update(Q_grad, pi_grad)
+        return critic_loss, actor_loss
+
+
+    def update_target_net(self):
+        self.sess.run(self.update_target_net_op)
 
 
     def _create_network(self, input_dims, name=None):
-        logger.info("Creating a DDPG agent with action space %d x %s..." % (self.dimu, self.max_u))
+        logger.info("Creating a DDPG agent with max_u {max_u} and u_offset {u_offset} ...".format(max_u=self.max_u, u_offset=self.u_offset))
 
         # running averages
         with tf.variable_scope('o_stats') as vs:
@@ -138,7 +263,6 @@ class DDPG():
         batch_tf = OrderedDict([(key, batch[i])
                                 for i, key in enumerate(self.stage_shapes.keys())])
         batch_tf['r'] = tf.reshape(batch_tf['r'], [-1, 1])
-
 
 
         # Create networks
@@ -191,6 +315,10 @@ class DDPG():
         tf.variables_initializer(self._global_vars('')).run(session=self.sess)
         self._init_target_net()
 
+    def _global_vars(self, scope):
+        res = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.scope + '/' + scope)
+        return res
+
 
     def _grads(self):
         # Avoid feed_dict here for performance!
@@ -200,172 +328,18 @@ class DDPG():
             self.Q_grad_tf,
             self.pi_grad_tf
         ])
-        #self.writer.add_scalar("critic_loss", critic_loss, self.i)
-        #self.writer.add_histogram("actor_loss", actor_loss, self.i)
+        #self.writer.add_scalar("critic_loss", critic_loss, self.ind)
+        #self.writer.add_histogram("actor_loss", actor_loss, self.ind)
         #print("critic_loss:", critic_loss)
         #print("actor_loss:", actor_loss)
         #print("len(actor_loss):", len(actor_loss))
-        self.i += 1
+        self.ind += 1
         return critic_loss, actor_loss, Q_grad, pi_grad
-
-
-
-
-
-    def _vars(self, scope):
-        res = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.scope + '/' + scope)
-        assert len(res) > 0
-        return res
-
-    def _global_vars(self, scope):
-        res = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.scope + '/' + scope)
-        return res
 
 
     def _init_target_net(self):
         self.sess.run(self.init_target_net_op)
 
-    def update_target_net(self):
-        self.sess.run(self.update_target_net_op)
-
-    def _update(self, Q_grad, pi_grad):
-        self.Q_adam.update(Q_grad, self.Q_lr)
-        self.pi_adam.update(pi_grad, self.pi_lr)
-
-    def logs(self, prefix=''):
-        logs = []
-        logs += [('stats_o/mean', np.mean(self.sess.run([self.o_stats.mean])))]
-        logs += [('stats_o/std', np.mean(self.sess.run([self.o_stats.std])))]
-        logs += [('stats_g/mean', np.mean(self.sess.run([self.g_stats.mean])))]
-        logs += [('stats_g/std', np.mean(self.sess.run([self.g_stats.std])))]
-
-        if prefix != '' and not prefix.endswith('/'):
-            return [(prefix + '/' + key, val) for key, val in logs]
-        else:
-            return logs
-
-
-    def train(self, stage=True):
-        if stage:
-            self.stage_batch()
-        critic_loss, actor_loss, Q_grad, pi_grad = self._grads()
-        self._update(Q_grad, pi_grad)
-        return critic_loss, actor_loss
-
-
-    def clear_buffer(self):
-        self.buffer.clear_buffer()
-
-
-
-
-    ## Get batch from original experience buffer in the form of the HER replay buffer!!!!!!!!!!!!!!!!!!!!!
-    def sample_batch(self, update_stats=True):
-        if self.replay_buffer.size >= self.batch_size:
-            old_states, actions, rewards, new_states, goals, is_terminals = self.replay_buffer.get_batch()
-
-
-            transitions = {}
-            transitions["g"] = goals
-            transitions["o"] = old_states
-            transitions["u"] = actions
-            transitions["o_2"] = new_states
-            transitions["g_2"] = goals
-            transitions["r"] = rewards
-
-            o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
-            transitions["o"], transitions["g"] = self._preprocess_og(o, g)
-            transitions["o_2"], transitions["g_2"] = self._preprocess_og(o_2, g)
-            #transitions_batch = [goals, old_states, actions, new_states, goals, rewards]
-
-
-            if update_stats:
-                self.o_stats.update(transitions['o'])
-                self.g_stats.update(transitions['g'])
-
-                self.o_stats.recompute_stats()
-                self.g_stats.recompute_stats()
-
-            transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
-            '''
-            f= open("/Users/maltemosbach/Desktop/transitions_hac.txt","a+")
-            #f.write("self.buffer.get_current_size(): " + str(self.buffer.get_current_size()) + "\n")
-            f.write("self.stage_shapes.keys(): " + str(self.stage_shapes.keys()) + "\n")
-            f.write("Batch no. " + str(self.ind) + " \n")
-            f.write("Batch size: " + str(self.batch_size) + " \n")
-            f.write("str(len(transitions['g'])): " + str(len(transitions['g'])) + " \n")
-            f.write("transitions['g']: " + str(transitions['g']) + "\n")
-            f.write("str(len(transitions['o'])): " + str(len(transitions['o'])) + " \n")
-            f.write("transitions['o']: " + str(transitions['o']) + "\n")
-            f.write("str(len(transitions['u'])): " + str(len(transitions['u'])) + " \n")
-            f.write("transitions['u']: " + str(transitions['u']) + "\n")
-            f.write("str(len(transitions['o_2'])): " + str(len(transitions['o_2'])) + " \n")
-            f.write("transitions['o_2']: " + str(transitions['o_2']) + "\n")
-            f.write("str(len(transitions['g_2'])): " + str(len(transitions['g_2'])) + " \n")
-            f.write("transitions['g_2']: " + str(transitions['g_2']) + "\n")
-            f.write("str(len(transitions['r'])): " + str(len(transitions['r'])) + " \n")
-            f.write("transitions['r']: " + str(transitions['r']) + "\n")
-            '''
-            self.ind += 1
-
-        else:
-            assert False, "Sample_batch should only be called with enough transitions in the replay_buffer"
-
-        # Batch should have the form [g, o, u, o_2, g_2, r]
-
-        return transitions_batch
-
-
-    def stage_batch(self, batch=None):
-        if batch is None:
-            batch = self.sample_batch()
-        assert len(self.buffer_ph_tf) == len(batch)
-        self.sess.run(self.stage_op, feed_dict=dict(zip(self.buffer_ph_tf, batch)))
-
-
-    def get_actions(self, o, g, use_target_net=False):
-
-        policy = self.target if use_target_net else self.main
-        # values to compute
-        vals = [policy.pi_tf]
-
-        # feed
-        feed = {
-            policy.o_tf: o.reshape(-1, self.dimo),
-            policy.g_tf: g.reshape(-1, self.dimg),
-            policy.u_tf: np.zeros((o.size // self.dimo, self.dimu), dtype=np.float32)
-        }
-
-        ret = self.sess.run(vals, feed_dict=feed)
-
-        #print('self.logs():', self.logs())
-
-        while len(ret) == 1:
-            ret = ret[0]
-
-        return ret
-
-
-
-    def get_Q_values(self, o, g, u, use_target_net=False):
-
-        policy = self.target if use_target_net else self.main
-        # values to compute
-        vals = [policy.Q_pi_tf]
-
-        # feed
-        feed = {
-            policy.o_tf: o.reshape(-1, self.dimo),
-            policy.g_tf: g.reshape(-1, self.dimg),
-            policy.u_tf: u.reshape(-1, self.dimu)
-        }
-
-        ret = self.sess.run(vals, feed_dict=feed)
-
-        if len(ret) == 1:
-            return ret[0]
-        else:
-            return ret
 
     def _preprocess_og(self, o, g):
             o = np.clip(o, -self.clip_obs, self.clip_obs)
@@ -373,7 +347,15 @@ class DDPG():
             return o, g
 
 
+    def _update(self, Q_grad, pi_grad):
+        self.Q_adam.update(Q_grad, self.Q_lr)
+        self.pi_adam.update(pi_grad, self.pi_lr)
 
+
+    def _vars(self, scope):
+        res = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=self.scope + '/' + scope)
+        assert len(res) > 0
+        return res
 
 
 
@@ -406,7 +388,8 @@ class ActorCritic:
 
         # Networks.
         with tf.variable_scope('pi'):
-            self.pi_tf = self.max_u * tf.tanh(nn(
+            # Added the option for offsets to actor network
+            self.pi_tf = self.u_offset + self.max_u * tf.tanh(nn(
                 input_pi, [self.hidden] * self.layers + [self.dimu]))
         with tf.variable_scope('Q'):
             # for policy training
