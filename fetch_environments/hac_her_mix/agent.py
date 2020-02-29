@@ -110,7 +110,7 @@ class Agent():
 
     def initialize_networks(self):
 
-        model_vars = tf.compat.v1.trainable_variables()
+        model_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope="")
         self.saver = tf.compat.v1.train.Saver(model_vars)
 
         # Set up directory for saving models
@@ -120,27 +120,19 @@ class Agent():
         if not os.path.exists(self.model_dir):
             os.makedirs(self.model_dir)
 
-         # Initialize actor/critic networks
+        # Initialize actor/critic networks
         self.sess.run(tf.compat.v1.global_variables_initializer())
 
         # If not retraining, restore weights
-        # if we are not retraining from scratch, just restore weights
         if self.FLAGS.retrain == False:
-            pass
-            #print("not retrain is called --> load policy")
-            #self.saver.restore(self.sess, tf.train.latest_checkpoint(self.model_dir))
-            #for i in range(len(self.layers)):
-            #    self.layers[i].policy.__setstate__("./models_saved")
+            self.saver.restore(self.sess, tf.train.latest_checkpoint(self.model_dir))
+
 
 
 
     # Save neural network parameters
     def save_model(self, episode):
-        pass
-        #self.saver.save(self.sess, self.model_loc, global_step=episode)
-        #save_path = "./models_saved"
-        #for i in range(len(self.layers)):
-        #    self.layers[i].policy.save(save_path)
+        self.saver.save(self.sess, self.model_loc, global_step=episode)
 
 
     # Update actor and critic networks for each layer

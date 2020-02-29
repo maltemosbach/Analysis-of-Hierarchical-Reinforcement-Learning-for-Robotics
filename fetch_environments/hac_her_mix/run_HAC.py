@@ -9,7 +9,7 @@ from tensorboardX import SummaryWriter
 from tensorboard.plugins.hparams import api as hp
 import tensorflow as tf
 
-NUM_BATCH = 2
+NUM_BATCH = 33
 TEST_FREQ = 2
 
 num_test_episodes = 10
@@ -18,6 +18,8 @@ def run_HAC(FLAGS,env,agent,writer,sess):
 
     Writer = writer
     Sess = sess
+
+    writer.add_scalar("test", 2, 1)
 
     # Print task summary
     print_summary(FLAGS,env)

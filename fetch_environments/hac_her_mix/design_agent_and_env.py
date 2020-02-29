@@ -27,9 +27,9 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
     See Section 3 of this file for other agent hyperparameters that can be configured.
     """
 
-    FLAGS.layers = 2    # Enter number of levels in agent hierarchy
+    FLAGS.layers = hparams["layers"]    # Enter number of levels in agent hierarchy
 
-    FLAGS.time_scale = 10    # Enter max sequence length in which each policy will specialize
+    FLAGS.time_scale = 5    # Enter max sequence length in which each policy will specialize
 
     # Enter max number of atomic actions.  This will typically be FLAGS.time_scale**(FLAGS.layers).  However, in the UR5 Reacher task, we use a shorter episode length.
     max_actions = 50
@@ -66,7 +66,7 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
 
 
     # Provide a function that maps from the state space to the end goal space.  This is used to (i) determine whether the agent should be given the sparse reward and (ii) for Hindsight Experience Replay to determine which end goal was achieved after a sequence of actions.
-    project_state_to_end_goal = lambda sim, state: state[:3]
+    project_state_to_end_goal = lambda sim, state: state[0:3]
 
     # For the FetchReach task the end goal is the desired position of the gripper
     dist_threshold = 0.05
@@ -101,7 +101,7 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
     agent_params = {}
 
     # Define percentage of actions that a subgoal level (i.e. level i > 0) will test subgoal actions
-    agent_params["subgoal_test_perc"] = 0.3
+    agent_params["subgoal_test_perc"] = hparams["sg_test_perc"]
 
     # Define subgoal penalty for missing subgoal.  Please note that by default the Q value target for missed subgoals does not include Q-value of next state (i.e, discount rate = 0).  As a result, the Q-value target for missed subgoal just equals penalty.  For instance in this 3-level UR5 implementation, if a level proposes a subgoal and misses it, the Q target value for this action would be -10.  To incorporate the next state in the penalty, go to the "penalize_subgoal" method in the "layer.py" file.
     agent_params["subgoal_penalty"] = -FLAGS.time_scale
