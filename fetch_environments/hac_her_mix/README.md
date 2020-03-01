@@ -1,6 +1,6 @@
-## Fetch Push HER
-In this folder I try to recreate the DDPG + HER example form the OpenAI paper. Therefore, the agent only has one layer and the hyperparameters will be changed to fit the ones in the paper.
+## HAC + HER
+This implementation uses a ddpg agent like the original HER one from OpenAI for the lowest layer and actor and critic implementations similar to the original HAC ones for all layers above.
 
-# Obeservations
-Using observations relative to the current gripper position and the absolute current gripper position as observations. Also the goal is relative to the grippers position
+# Hyperparameters and runs
+A list of hyperparameters is given in the initialize_HAC.py file. The file will start runs with all possible hparam combinations and log the results to tensorboard.
 
