@@ -19,7 +19,6 @@ def run_HAC(FLAGS,env,agent,writer,sess):
     Writer = writer
     Sess = sess
 
-    writer.add_scalar("test", 2, 1)
 
     # Print task summary
     print_summary(FLAGS,env)

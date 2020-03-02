@@ -66,7 +66,6 @@ for m in range(len(combinations["run"])*len(combinations["sg_test_perc"])*len(co
     sess = tf.compat.v1.InteractiveSession()
     writer_graph = tf.compat.v1.summary.FileWriter(logdir)
     writer = SummaryWriter(logdir)
-    writer.add_scalar("test", 1, 0)
 
     with open(logdir + '/hparams.txt', 'w') as file:
          file.write(json.dumps(hparams[m]))
