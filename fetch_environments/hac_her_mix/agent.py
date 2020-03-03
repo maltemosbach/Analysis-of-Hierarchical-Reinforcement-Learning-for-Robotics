@@ -185,45 +185,14 @@ class Agent():
 
     # Log any variables to tensorboard
     def log_tb(self):
-        #self.writer.add_scalar('self.layers[0].critic.loss_val', self.layers[0].critic.loss_val, self.total_episode_num)
-        # Adding current weights and biases of actor and critic networks
-        log_weights = False
-        if log_weights:
-            self.writer.add_histogram('actor_0_fc_1/weights', self.layers[0].actor.weights[0].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_fc_1/biases', self.layers[0].actor.weights[1].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_fc_2/weights', self.layers[0].actor.weights[2].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_fc_2/biases', self.layers[0].actor.weights[3].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_fc_3/weights', self.layers[0].actor.weights[4].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_fc_3/biases', self.layers[0].actor.weights[5].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_fc_4/weights', self.layers[0].actor.weights[6].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_fc_4/biases', self.layers[0].actor.weights[7].eval(session=self.sess), self.total_episode_num)
-
-            self.writer.add_histogram('actor_0_target_fc_1/weights', self.layers[0].actor.target_weights[0].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_target_fc_1/biases', self.layers[0].actor.target_weights[1].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_target_fc_2/weights', self.layers[0].actor.target_weights[2].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_target_fc_2/biases', self.layers[0].actor.target_weights[3].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_target_fc_3/weights', self.layers[0].actor.target_weights[4].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_target_fc_3/biases', self.layers[0].actor.target_weights[5].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_target_fc_4/weights', self.layers[0].actor.target_weights[6].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('actor_0_target_fc_4/biases', self.layers[0].actor.target_weights[7].eval(session=self.sess), self.total_episode_num)
-
-            self.writer.add_histogram('critic_0_fc_1/weights', self.layers[0].critic.weights[0].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_fc_1/biases', self.layers[0].critic.weights[1].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_fc_2/weights', self.layers[0].critic.weights[2].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_fc_2/biases', self.layers[0].critic.weights[3].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_fc_3/weights', self.layers[0].critic.weights[4].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_fc_3/biases', self.layers[0].critic.weights[5].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_fc_4/weights', self.layers[0].critic.weights[6].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_fc_4/biases', self.layers[0].critic.weights[7].eval(session=self.sess), self.total_episode_num)
-
-            self.writer.add_histogram('critic_0_target_fc_1/weights', self.layers[0].critic.target_weights[0].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_target_fc_1/biases', self.layers[0].critic.target_weights[1].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_target_fc_2/weights', self.layers[0].critic.target_weights[2].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_target_fc_2/biases', self.layers[0].critic.target_weights[3].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_target_fc_3/weights', self.layers[0].critic.target_weights[4].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_target_fc_3/biases', self.layers[0].critic.target_weights[5].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_target_fc_4/weights', self.layers[0].critic.target_weights[6].eval(session=self.sess), self.total_episode_num)
-            self.writer.add_histogram('critic_0_target_fc_4/biases', self.layers[0].critic.target_weights[7].eval(session=self.sess), self.total_episode_num)
+        log_loss = True
+        if log_loss:
+            self.writer.add_histogram('layer_0_actor_loss', self.layers[0].policy.actor_loss, self.total_episode_num)
+            self.writer.add_scalar('layer_0_critic_loss', self.layers[0].policy.critic_loss, self.total_episode_num)
+            if self.FLAGS.layers > 1:
+                self.writer.add_scalar('layer_1_critic_loss', self.layers[1].critic.loss_val, self.total_episode_num)
+                if self.FLAGS.layers > 2:
+                    self.writer.add_scalar('layer_2_critic_loss', self.layers[2].critic.loss_val, self.total_episode_num)
 
 
 

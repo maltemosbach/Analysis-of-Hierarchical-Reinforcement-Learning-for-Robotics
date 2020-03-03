@@ -20,10 +20,10 @@ combinations = {
         "ac_n"         : [0.2],
         "sg_n"         : [0.1],
         "replay_k"     : [4],
-        "layers"       : [1],
-        "use_target"   : [False],
-        "sg_test_perc" : [0.3],
-        "run"          : [0]
+        "layers"       : [1, 2],
+        "use_target"   : [False, True],
+        "sg_test_perc" : [0.1, 0.3],
+        "run"          : [0, 1]
     }
 
 hparams = [{}] * len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])
@@ -52,7 +52,7 @@ date = datetime.now().strftime("%d.%m-%H:%M")
 
 #for m in range(len(hparams)):
 for m in range(len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])):
-    print("Run number {no_run} of {total_runs}:".format(no_run=m+1, total_runs=int(len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])+1)))
+    print("Run number {no_run} of {total_runs}:".format(no_run=m+1, total_runs=int(len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"]))))
     print("Running with hyperparameters ", hparams[m])
     hp_dir = "/"
     for arg in hparams[m]:

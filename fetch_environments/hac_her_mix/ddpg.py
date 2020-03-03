@@ -53,6 +53,8 @@ class DDPG():
 
         # index used in logging and debugging
         self.ind = 0
+        self.actor_loss = 0
+        self.critic_loss = 0
 
 
         self.input_dims = {"o" : 0, "g" : 0, "u" : 0}
@@ -249,6 +251,9 @@ class DDPG():
             self.stage_batch()
         critic_loss, actor_loss, Q_grad, pi_grad = self._grads()
         self._update(Q_grad, pi_grad)
+
+        self.actor_loss = actor_loss
+        self.critic_loss = critic_loss
         return critic_loss, actor_loss
 
 
