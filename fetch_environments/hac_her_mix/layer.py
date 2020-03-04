@@ -15,6 +15,9 @@ from ddpg import DDPG
 from actor import Actor
 from critic import Critic
 
+
+from baselines.her.util import convert_episode_to_batch_major, store_args
+
 def goal_distance(goal_a, goal_b):
     assert goal_a.shape == goal_b.shape
     return np.linalg.norm(goal_a - goal_b, axis=-1)
@@ -25,6 +28,27 @@ class Layer():
         self.FLAGS = FLAGS
         self.sess = sess
         self.hparams = hparams
+
+
+
+        # Adding self.dims for rollout-fashion implementation
+        self.dims = {"g" : 0, "o" : 0, "info_is_success": 1, "u" : 0}
+        self.dims["o"] = env.state_dim
+
+        # Dimensions of goal placeholder will differ depending on layer level
+        if layer_number == FLAGS.layers - 1:
+            self.dims["g"] = env.end_goal_dim
+        else:
+            self.dims["g"] = env.subgoal_dim
+
+        # Dimensions of action will depend on layer level
+        if layer_number == 0:
+            self.dims["u"] = env.action_dim
+        else:
+            self.dims["u"] = env.subgoal_dim
+
+        self.info_keys = ['is_success']
+
 
 
 
@@ -77,7 +101,7 @@ class Layer():
         self.layers = 3
 
         if self.layer_number == 0:
-            self.policy = DDPG(self.sess, self.writer, env, hparams, self.batch_size, self.replay_buffer, self.layer_number, FLAGS, self.hidden, self.layers)
+            self.policy = DDPG(self.sess, self.writer, env, hparams, self.batch_size, self.replay_buffer, self.layer_number, FLAGS, self.hidden, self.layers, self.time_limit, use_replay_buffer=hparams["use_rb"])
         else:
             # Initialize actor and critic networks
             self.critic = Critic(sess, env, self.layer_number, FLAGS, hparams)
@@ -337,15 +361,67 @@ class Layer():
         else:
             return False
 
+    # Determine whether layer is finished training
+    def return_to_higher_level_new(self, max_lay_achieved, agent, env, attempts_made):
+
+        # Return to higher level if (i) a higher level goal has been reached, (ii) maxed out episode time steps (env.max_actions), (iii) not testing and layer is out of attempts, and (iv) testing, layer is not the highest level, and layer is out of attempts.  NOTE: during testing, highest level will continue to ouput subgoals until either (i) the maximum number of episdoe time steps or (ii) the end goal has been achieved.
+        #print("In return_to_higher_level_new!")
+        #print("max_lay_achieved:", max_lay_achieved)
+        #print("agent.FLAGS.test:", agent.FLAGS.test)
+        #print("attempts_made:", attempts_made)
+        #print("self.time_limit:", self.time_limit)
+        # Return to previous level when any higher level goal achieved.  NOTE: if not testing and agent achieves end goal, training will continue until out of time (i.e., out of time steps or highest level runs out of attempts).  This will allow agent to experience being around the end goal.
+        if max_lay_achieved is not None and max_lay_achieved >= self.layer_number and (agent.FLAGS.test or (not agent.FLAGS.test and max_lay_achieved < agent.FLAGS.layers-1)):
+            return True
+
+        # Return when out of time
+        elif agent.steps_taken >= env.max_actions:
+            return True
+
+        # Return when layer has maxed out attempts
+        elif not agent.FLAGS.test and attempts_made >= self.time_limit:
+            return True
+
+        # NOTE: During testing, agent will have env.max_action attempts to achieve goal
+        elif agent.FLAGS.test and self.layer_number < agent.FLAGS.layers-1 and attempts_made >= self.time_limit:
+            return True
+
+        else:
+            return False
+
 
     # Learn to achieve goals with actions belonging to appropriate time scale.  "goal_array" contains the goal states for the current layer and all higher layers
     def train(self, agent, env, subgoal_test = False, episode_num = None):
 
         # print("\nTraining Layer %d" % self.layer_number)
 
+        # Only print goal achievement once
+        printed_achieved = False
+
         # Set layer's current state and new goal state
         self.goal = agent.goal_array[self.layer_number]
         self.current_state = agent.current_state
+
+        # Adding notation from rollout.generate_rollouts()
+        o = np.empty((1, self.dims['o']), np.float32)   # observations
+        ag = np.empty((1, self.dims['g']), np.float32)  # achieved goals
+        o[:] = self.current_state
+        self.g = self.goal
+
+        if self.layer_number == self.FLAGS.layers-1:
+            ag[:] = env.project_state_to_end_goal(env.sim, self.current_state)
+        else:
+            ag[:] = env.project_state_to_subgoal(env.sim, self.current_state)
+
+        self.T = self.time_limit
+
+        # generate episodes
+        obs, achieved_goals, acts, goals, successes = [], [], [], [], []
+        dones = []
+
+        info_values = [np.empty((self.T - 1, 1, self.dims['info_' + key]), np.float32) for key in self.info_keys]
+
+
 
         # Reset flag indicating whether layer has ran out of attempts.  This will be used for subgoal testing.
         self.maxed_out = False
@@ -363,6 +439,13 @@ class Layer():
 
             # Select action to achieve goal state using epsilon-greedy policy or greedy policy if in test mode
             action, action_type, next_subgoal_test = self.choose_action(agent, env, subgoal_test)
+            u = action
+            if u.ndim == 1:
+                u = u.reshape(1, -1)
+
+            o_new = np.empty((1, self.dims['o']))
+            ag_new = np.empty((1, self.dims['g']))
+            success = np.zeros(1)
 
             if self.FLAGS.Q_values:
                 # print("\nLayer %d Action: " % self.layer_number, action)
@@ -388,6 +471,31 @@ class Layer():
                 next_state = env.execute_action(action)
                 # print("Current Velo: ", env.sim.data.qvel[:2])
                 # sleep(1)
+                o_new = env.obs['observation']
+                ag_new = env.obs['achieved_goal']
+                info = np.array([env.info])
+                done = env.done
+                #success = np.array([i.get('is_success', 0.0) for i in info])
+                success = env.info["is_success"]
+
+                #for i, info_dict in enumerate(info):
+                #    for idx, key in enumerate(self.info_keys):
+                 #       info_values[idx][t, i] = info[i][key]
+
+                success2 = [[success]]
+
+                dones.append(done)
+                obs.append(o.copy())
+                achieved_goals.append(ag.copy())
+                successes.append(success2.copy())
+                acts.append(u.copy())
+                goals.append([self.g.copy()])
+                o[...] = o_new
+                ag[...] = ag_new
+
+                info_values = successes
+
+
 
                 # Increment steps taken
                 agent.steps_taken += 1
@@ -404,7 +512,7 @@ class Layer():
             attempts_made += 1
 
             # Print if goal from current layer as been achieved
-            if goal_status[self.layer_number]:
+            if goal_status[self.layer_number] and printed_achieved == False:
                 if self.layer_number < agent.FLAGS.layers - 1:
                     print("SUBGOAL ACHIEVED")
                 print("\nEpisode %d, Layer %d, Attempt %d Goal Achieved" % (episode_num, self.layer_number, attempts_made))
@@ -413,6 +521,10 @@ class Layer():
                     print("Hindsight Goal: ", env.project_state_to_end_goal(env.sim, agent.current_state))
                 else:
                     print("Hindsight Goal: ", env.project_state_to_subgoal(env.sim, agent.current_state))
+
+                printed_achieved = True
+
+                    #print("episode:", episode)
 
             # Perform hindsight learning using action actually executed (low-level action or hindsight subgoal)
             if self.layer_number == 0:
@@ -465,15 +577,41 @@ class Layer():
 
             # Return to previous level to receive next subgoal if applicable
             # if self.return_to_higher_level(max_lay_achieved, agent, env, attempts_made):
+            # if (a layer has achieved its goal and it is higher or equal to the current layer) or the agent is out of steps or the layer is out of steps:
             if (max_lay_achieved is not None and max_lay_achieved >= self.layer_number) or agent.steps_taken >= env.max_actions or attempts_made >= self.time_limit:
 
                 if self.layer_number == agent.FLAGS.layers-1:
-                    print("HL Attempts Made: ", attempts_made)
+                    pass
+                    #print("HL Attempts Made: ", attempts_made)
 
                 # If goal was not achieved after max number of attempts, set maxed out flag to true
                 if attempts_made >= self.time_limit and not goal_status[self.layer_number]:
                     self.maxed_out = True
                     # print("Layer %d Out of Attempts" % self.layer_number)
+
+
+                if (attempts_made >= self.time_limit) and not agent.FLAGS.test and self.layer_number == 0:
+                    if attempts_made >= self.time_limit:
+                        obs.append(o.copy())
+                        achieved_goals.append(ag.copy())
+                    episode = dict(o=obs,
+                           u=acts,
+                           g=goals,
+                           ag=achieved_goals,
+                           info_is_success=np.array(successes))
+                    #print("episode_org:", episode)
+                    episode = convert_episode_to_batch_major(episode)
+                    self.policy.store_episode(episode)
+                    #print("Episode stored!")
+                    #print("episode:", episode)
+                    #assert len(episode['o'][0]) == 50, "ERROR: Episode size wrong"
+                    #assert len(episode['g'][0]) == 49, "ERROR: Episode size wrong"
+
+                    #print("len(episode['o'][0]:", len(episode['o'][0]))
+                    #print("len(episode['g'][0]:", len(episode['g'][0]))
+                    #print("len(episode['ag'][0]:", len(episode['ag'][0]))
+                    #print("len(episode['info_is_success'][0]:", len(episode['info_is_success'][0]))
+                    #print("len(episode['u'][0]:", len(episode['u'][0]))
 
                 # If not testing, finish goal replay by filling in missing goal and reward values before returning to prior level.
                 if not agent.FLAGS.test:
@@ -485,7 +623,7 @@ class Layer():
                     self.finalize_goal_replay(goal_thresholds)
 
                 # Under certain circumstances, the highest layer will not seek a new end goal
-                if self.return_to_higher_level(max_lay_achieved, agent, env, attempts_made):
+                if self.return_to_higher_level_new(max_lay_achieved, agent, env, attempts_made):
                     return goal_status, max_lay_achieved
 
 
@@ -495,13 +633,23 @@ class Layer():
 
         if self.layer_number == 0:
             # Update nets if replay buffer is large enough
-            if self.replay_buffer.size >= self.batch_size:
-                # Update main nets num_updates times
-                for _ in range(num_updates):
-                    self.policy.train()
+            if self.hparams["use_rb"]:
+                print("self.policy.buffer.get_current_size():", self.policy.buffer.get_current_size())
+                if self.policy.buffer.get_current_size() >= 50:
+                    # Update main nets num_updates times
+                    for _ in range(num_updates):
+                        self.policy.train()
 
-                # Update all target nets
-                self.policy.update_target_net()
+                    # Update all target nets
+                    self.policy.update_target_net()
+            else:
+                if self.replay_buffer.size >= self.batch_size:
+                    # Update main nets num_updates times
+                    for _ in range(num_updates):
+                        self.policy.train()
+
+                    # Update all target nets
+                    self.policy.update_target_net()
 
         else:
             '''

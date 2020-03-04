@@ -10,14 +10,23 @@ from baselines.her.util import (
 from baselines.common.mpi_adam import MpiAdam
 from baselines.common import tf_util
 
+from baselines.her.replay_buffer import ReplayBuffer
+
+from baselines.her.her_sampler import make_sample_her_transitions
+
 # Helper function
 def dims_to_shapes(input_dims):
     return {key: tuple([val]) if val > 0 else tuple() for key, val in input_dims.items()}
 
 
+def goal_distance(goal_a, goal_b):
+    assert goal_a.shape == goal_b.shape
+    return np.linalg.norm(goal_a - goal_b, axis=-1)
+
+
 class DDPG():
 
-    def __init__(self, sess, writer, env, hparams, batch_size, replay_buffer, layer_number, FLAGS, hidden, layers, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
+    def __init__(self, sess, writer, env, hparams, batch_size, experience_buffer, layer_number, FLAGS, hidden, layers, T, use_replay_buffer=True, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
         gamma=0.98, action_l2=1.0, norm_eps=0.01, norm_clip=5, clip_obs=200):
 
         """The new DDPG policy used inside the HAC algorithm
@@ -32,7 +41,7 @@ class DDPG():
 
         self.sess = sess
         self.writer = writer
-        self.replay_buffer = replay_buffer
+        self.experience_buffer = experience_buffer
 
         # DDPG parameters
         self.norm_eps = norm_eps
@@ -48,6 +57,8 @@ class DDPG():
         self.clip_return = 50  ## Check on that later!!
         self.action_l2 = action_l2
         self.clip_obs = clip_obs
+        self.T = T
+        self.use_replay_buffer = use_replay_buffer
 
         self.scope = "ddpg_layer_" + str(layer_number)
 
@@ -124,6 +135,27 @@ class DDPG():
             self._create_network(self.input_dims)
 
 
+        # Configure the replay buffer.
+        buffer_shapes = {'g': (self.T, self.dimg), 'u': (self.T, self.dimu), 'ag': (self.T+1, self.dimg), 'o': (self.T+1, self.dimo), 'info_is_success': (self.T, 1)}
+        print("buffer_shapes:", buffer_shapes)
+
+        #buffer_size = (self.buffer_size // self.rollout_batch_size) * self.rollout_batch_size
+        buffer_size = 1000000
+
+        def reward_fun(ag_2, g, info):  # vectorized
+            return env.gymEnv.compute_reward(achieved_goal=ag_2, desired_goal=g, info=info)
+
+        her_params = {'reward_fun': reward_fun, 'replay_k': hparams["replay_k"], 'replay_strategy': 'future'}
+
+        print("her_params:", her_params)
+
+        sample_her_transitions = make_sample_her_transitions(**her_params)
+        self.sample_transitions = sample_her_transitions
+
+
+        self.buffer = ReplayBuffer(buffer_shapes, buffer_size, self.T, self.sample_transitions)
+        self.buffer.clear_buffer()
+
     # Return main or target actions for given observation and goal
     def get_actions(self, o, g, use_target_net=False):
 
@@ -183,9 +215,9 @@ class DDPG():
 
 
     # Get batch from original experience buffer in the form of the HER replay buffer
-    def sample_batch(self, update_stats=True):
-        if self.replay_buffer.size >= self.batch_size:
-            old_states, actions, rewards, new_states, goals, is_terminals = self.replay_buffer.get_batch()
+    def sample_batch_experience_buffer(self, update_stats=True):
+        if self.experience_buffer.size >= self.batch_size:
+            old_states, actions, rewards, new_states, goals, is_terminals = self.experience_buffer.get_batch()
 
             transitions = {}
             transitions["g"] = goals
@@ -235,15 +267,62 @@ class DDPG():
         # Batch should have the form [g, o, u, o_2, g_2, r]
         return transitions_batch
 
+
+    def sample_batch_replay_buffer(self):
+
+        transitions = self.buffer.sample(self.batch_size) #otherwise only sample from primary buffer
+
+        o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
+        ag, ag_2 = transitions['ag'], transitions['ag_2']
+        transitions['o'], transitions['g'] = self._preprocess_og(o, g)
+        transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
+
+        transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
+        return transitions_batch
+
+
     def save(self, save_path):
             tf_util.save_variables(save_path)
 
 
     def stage_batch(self, batch=None):
         if batch is None:
-            batch = self.sample_batch()
+            if self.use_replay_buffer:
+                batch = self.sample_batch_replay_buffer()
+            else:
+                batch = self.sample_batch_experience_buffer()
+                
         assert len(self.buffer_ph_tf) == len(batch)
         self.sess.run(self.stage_op, feed_dict=dict(zip(self.buffer_ph_tf, batch)))
+
+
+
+
+
+    def store_episode(self, episode_batch, update_stats=True):
+        """
+        episode_batch: array of batch_size x (T or T+1) x dim_key
+                       'o' is of size T+1, others are of size T
+        """
+
+        self.buffer.store_episode(episode_batch)
+
+        if update_stats:
+            # add transitions to normalizer
+            episode_batch['o_2'] = episode_batch['o'][:, 1:, :]
+            episode_batch['ag_2'] = episode_batch['ag'][:, 1:, :]
+            num_normalizing_transitions = transitions_in_episode_batch(episode_batch)
+            transitions = self.sample_transitions(episode_batch, num_normalizing_transitions)
+
+            o, g, ag = transitions['o'], transitions['g'], transitions['ag']
+            transitions['o'], transitions['g'] = self._preprocess_og(o, g)
+            # No need to preprocess the o_2 and g_2 since this is only used for stats
+
+            self.o_stats.update(transitions['o'])
+            self.g_stats.update(transitions['g'])
+
+            self.o_stats.recompute_stats()
+            self.g_stats.recompute_stats()
 
 
     def train(self, stage=True):

@@ -132,6 +132,11 @@ class Agent():
 
     # Save neural network parameters
     def save_model(self, episode):
+        self.saver.save(self.sess, self.model_dir + '/perfect' + '/HAC.ckpt', global_step=episode)
+
+
+    # Save neural network parameters
+    def save_perfect_model(self, episode):
         self.saver.save(self.sess, self.model_loc, global_step=episode)
 
 
@@ -160,9 +165,11 @@ class Agent():
         self.log_tb()
         self.total_episode_num += 1
 
-
+        #print("self.layers[0].policy.buffer.get_current_size():", self.layers[0].policy.buffer.get_current_size())
         # Train for an episode
         goal_status, max_lay_achieved = self.layers[self.FLAGS.layers-1].train(self,env, episode_num = episode_num)
+
+        #print("self.layers[0].policy.buffer.get_current_size():", self.layers[0].policy.buffer.get_current_size())
 
 
         # Update actor/critic networks if not testing

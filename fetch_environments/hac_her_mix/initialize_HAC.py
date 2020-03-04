@@ -21,12 +21,13 @@ combinations = {
         "sg_n"         : [0.1],
         "replay_k"     : [4],
         "layers"       : [1, 2],
-        "use_target"   : [False, True],
-        "sg_test_perc" : [0.1, 0.3],
+        "use_target"   : [False],
+        "sg_test_perc" : [0.1],
+        "use_rb"       : [False, True],
         "run"          : [0, 1]
     }
 
-hparams = [{}] * len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])
+hparams = [{}] * len(combinations["run"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])
 print('len(hparams):', len(hparams))
 for i in range(len(combinations["ac_n"])):
     for j in range(len(combinations["sg_n"])):
@@ -34,25 +35,27 @@ for i in range(len(combinations["ac_n"])):
             for l in range(len(combinations["layers"])):
                 for m in range(len(combinations["use_target"])):
                     for n in range(len(combinations["sg_test_perc"])):
-                        for o in range(len(combinations["run"])):
-                            hparams[i*len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"]) + j*len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"]) + k*len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"]) + l*len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"]) + m*len(combinations["run"])*len(combinations["sg_test_perc"]) + n*len(combinations["run"]) + o ] = {
-                                "ac_n"          : combinations["ac_n"][i],
-                                "sg_n"          : combinations["sg_n"][j],
-                                "replay_k"      : combinations["replay_k"][k],
-                                "layers"        : combinations["layers"][l],
-                                "use_target"    : combinations["use_target"][m],
-                                "sg_test_perc"  : combinations["sg_test_perc"][n],
-                                "run"           : combinations["run"][o]
+                        for o in range(len(combinations["use_rb"])):
+                            for p in range(len(combinations["run"])):
+                                hparams[i*len(combinations["run"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"]) + j*len(combinations["run"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"]) + k*len(combinations["run"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"]) + l*len(combinations["run"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"]) + m*len(combinations["run"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"]) + n*len(combinations["run"])*len(combinations["use_rb"]) + o*len(combinations["run"]) + p ] = {
+                                    "ac_n"          : combinations["ac_n"][i],
+                                    "sg_n"          : combinations["sg_n"][j],
+                                    "replay_k"      : combinations["replay_k"][k],
+                                    "layers"        : combinations["layers"][l],
+                                    "use_target"    : combinations["use_target"][m],
+                                    "sg_test_perc"  : combinations["sg_test_perc"][n],
+                                    "use_rb"        : combinations["use_rb"][o],
+                                    "run"           : combinations["run"][p]
 
-                                }
+                                    }
 
 
 date = datetime.now().strftime("%d.%m-%H:%M")
 
 
 #for m in range(len(hparams)):
-for m in range(len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])):
-    print("Run number {no_run} of {total_runs}:".format(no_run=m+1, total_runs=int(len(combinations["run"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"]))))
+for m in range(len(hparams)):
+    print("Run number {no_run} of {total_runs}:".format(no_run=m+1, total_runs=int(len(hparams))))
     print("Running with hyperparameters ", hparams[m])
     hp_dir = "/"
     for arg in hparams[m]:
@@ -82,7 +85,7 @@ for m in range(len(combinations["run"])*len(combinations["sg_test_perc"])*len(co
     run_HAC(FLAGS,env,agent,writer,sess)
 
     # Save models
-    save_model = False
+    save_model = True
     if save_model:
         shutil.move("./models", modeldir)
 
