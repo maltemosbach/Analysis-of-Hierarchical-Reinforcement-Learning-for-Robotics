@@ -165,3 +165,17 @@ class Environment():
             self.gymEnv.env.sim.model.site_pos[site_id] = subgoals[1][:3] - sites_offset[3]
             self.gymEnv.env.sim.model.site_rgba[2][3] = 0.5
             self.gymEnv.env.sim.model.site_rgba[3][3] = 0.5
+
+
+    # Visualize a goal including the gripper opening
+    def display_goal_opening(self,goal):
+        # Goal can be visualized by changing the location of the relevant site object.
+        assert len(goal) == 4, "The goal must be 4-dimensional to visualize the position and gripper opening"
+        sites_offset = (self.gymEnv.env.sim.data.site_xpos - self.gymEnv.env.sim.model.site_pos).copy()
+        site_id_l = self.gymEnv.env.sim.model.site_name2id('gripper_l_site')
+        site_id_r = self.gymEnv.env.sim.model.site_name2id('gripper_r_site')
+
+        self.gymEnv.env.sim.model.site_pos[site_id_l] = goal[:3] - sites_offset[4] + [0, + 0.008 + goal[3], 0.019]
+        self.gymEnv.env.sim.model.site_pos[site_id_r] = goal[:3] - sites_offset[5] + [0, -0.008 - goal[3], 0.019]
+        self.gymEnv.env.sim.model.site_rgba[4][3] = 0.7
+        self.gymEnv.env.sim.model.site_rgba[5][3] = 0.7
