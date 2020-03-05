@@ -27,7 +27,7 @@ class Actor():
         self.norm_eps = 0.01
         self.norm_clip = 5
         # running averages
-        with tf.variable_scope('features_stats_actor_1') as vs:
+        with tf.variable_scope('features_stats_actor_' + str(layer_number)) as vs:
             self.f_stats = Normalizer(self.dimo+self.dimg, self.norm_eps, self.norm_clip, sess=self.sess)
 
 

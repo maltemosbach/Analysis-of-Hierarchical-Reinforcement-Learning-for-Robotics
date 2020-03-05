@@ -20,11 +20,6 @@ class Agent():
         self.writer = writer
         self.writer_graph = writer_graph
         self.hparams = hparams
-        # Merge all summary inforation.
-        #summary = tf.summary.merge_all()
-        self.total_episode_num = 0
-        
-        
 
         # Set subgoal testing ratio each layer will use
         self.subgoal_test_perc = agent_params["subgoal_test_perc"]
@@ -161,9 +156,6 @@ class Agent():
 
         # Reset step counter
         self.steps_taken = 0
-       
-        self.log_tb()
-        self.total_episode_num += 1
 
         #print("self.layers[0].policy.buffer.get_current_size():", self.layers[0].policy.buffer.get_current_size())
         # Train for an episode
@@ -191,15 +183,15 @@ class Agent():
 
 
     # Log any variables to tensorboard
-    def log_tb(self):
+    def log_tb(self, step):
         log_loss = True
         if log_loss:
-            self.writer.add_histogram('layer_0_actor_loss', self.layers[0].policy.actor_loss, self.total_episode_num)
-            self.writer.add_scalar('layer_0_critic_loss', self.layers[0].policy.critic_loss, self.total_episode_num)
+            self.writer.add_histogram('layer_0_actor_loss', self.layers[0].policy.actor_loss, step)
+            self.writer.add_scalar('layer_0_critic_loss', self.layers[0].policy.critic_loss, step)
             if self.FLAGS.layers > 1:
-                self.writer.add_scalar('layer_1_critic_loss', self.layers[1].critic.loss_val, self.total_episode_num)
+                self.writer.add_scalar('layer_1_critic_loss', self.layers[1].critic.loss_val, step)
                 if self.FLAGS.layers > 2:
-                    self.writer.add_scalar('layer_2_critic_loss', self.layers[2].critic.loss_val, self.total_episode_num)
+                    self.writer.add_scalar('layer_2_critic_loss', self.layers[2].critic.loss_val, step)
 
 
 

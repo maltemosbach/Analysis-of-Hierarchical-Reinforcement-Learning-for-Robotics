@@ -9,7 +9,7 @@ from tensorboardX import SummaryWriter
 from tensorboard.plugins.hparams import api as hp
 import tensorflow as tf
 
-NUM_BATCH = 65
+NUM_BATCH = 33
 TEST_FREQ = 2
 
 num_test_episodes = 10
@@ -65,6 +65,7 @@ def run_HAC(FLAGS,env,agent,writer,sess):
             success_rate = successful_episodes / num_test_episodes * 100
             print("\nTesting Success Rate %.2f%%" % success_rate)
             Writer.add_scalar("success_rate", success_rate/100, i)
+            agent.log_tb(i)
             if success_rate == 100 and saved_perfect_agent == False:
                 agent.save_perfect_model(episode)
                 saved_perfect_agent = True
