@@ -1,0 +1,3 @@
+model_checkpoint_path: "/Users/maltemosbach/git/Master_thesis/fetch_environments/hac_td3/models/perfect/HAC.ckpt-9"
+all_model_checkpoint_paths: "/Users/maltemosbach/git/Master_thesis/fetch_environments/hac_td3/models/HAC.ckpt-9"
+all_model_checkpoint_paths: "/Users/maltemosbach/git/Master_thesis/fetch_environments/hac_td3/models/perfect/HAC.ckpt-9"

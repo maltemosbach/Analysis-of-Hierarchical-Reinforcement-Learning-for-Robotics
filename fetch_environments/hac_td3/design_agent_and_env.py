@@ -29,7 +29,7 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
 
     FLAGS.layers = hparams["layers"]    # Enter number of levels in agent hierarchy
 
-    FLAGS.time_scale = 5    # Enter max sequence length in which each policy will specialize
+    FLAGS.time_scale = 8    # Enter max sequence length in which each policy will specialize
 
     # Enter max number of atomic actions.  This will typically be FLAGS.time_scale**(FLAGS.layers).  However, in the UR5 Reacher task, we use a shorter episode length.
     max_actions = 50
@@ -115,7 +115,7 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
     agent_params["episodes_to_store"] = 20000
 
     # Provide training schedule for agent.  Training by default will alternate between exploration and testing.  Hyperparameter below indicates number of exploration episodes.  Testing occurs for 100 episodes.  To change number of testing episodes, go to "ran_HAC.py".
-    agent_params["num_exploration_episodes"] = 2
+    agent_params["num_exploration_episodes"] = 10
 
     # For other relavent agent hyperparameters, please refer to the "agent.py" and "layer.py" files
 

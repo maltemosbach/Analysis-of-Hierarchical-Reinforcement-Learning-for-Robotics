@@ -26,8 +26,8 @@ def goal_distance(goal_a, goal_b):
 
 class TD3():
 
-    def __init__(self, sess, writer, env, hparams, batch_size, experience_buffer, layer_number, FLAGS, hidden, layers, T, use_replay_buffer=True, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
-        gamma=0.98, action_l2=1.0, norm_eps=0.01, norm_clip=5, clip_obs=200, policy_freq=2):
+    def __init__(self, sess, writer, env, hparams, batch_size, experience_buffer, layer_number, FLAGS, hidden, layers, T, use_replay_buffer=True, Q_lr=0.003, pi_lr=0.003, tau=0.005, 
+        gamma=0.98, action_l2=1.0, norm_eps=0.01, norm_clip=5, clip_obs=200, policy_freq=2, policy_noise=0.2, noise_clip=0.5):
 
         """The new TD3 policy used inside the HAC algorithm
         Args:
@@ -61,6 +61,8 @@ class TD3():
         self.use_replay_buffer = use_replay_buffer
         self.policy_freq = policy_freq
         self.total_it = 0
+        self.policy_noise = policy_noise
+        self.noise_clip = noise_clip
 
         self.scope = "TD3_layer_" + str(layer_number)
 
@@ -68,6 +70,8 @@ class TD3():
         self.ind = 0
         self.actor_loss = 0
         self.critic_loss = 0
+        self.Q_1_loss = 0
+        self.Q_2_loss = 0
 
 
         self.input_dims = {"o" : 0, "g" : 0, "u" : 0}
@@ -376,12 +380,11 @@ class TD3():
 
         # loss functions
         # Target becomes minimum of both values of Q_1 and Q_2 fot TD3
-        target_Q_1_pi_tf = self.target.Q_1_pi_tf
-        target_Q_2_pi_tf = self.target.Q_2_pi_tf
+        target_Q_1_pi_tf = self.target.Q_1_pi_tf_noisy
+        target_Q_2_pi_tf = self.target.Q_2_pi_tf_noisy
         clip_range = (-self.clip_return, 0.)
-        target_tf_1 = tf.clip_by_value(batch_tf['r'] + self.gamma * target_Q_1_pi_tf, *clip_range)
-        target_tf_2 = tf.clip_by_value(batch_tf['r'] + self.gamma * target_Q_2_pi_tf, *clip_range)
-        target_tf = tf.math.minimum(target_tf_1, target_tf_2)
+        target_tf = tf.math.minimum(target_Q_1_pi_tf, target_Q_2_pi_tf)
+        target_tf = tf.clip_by_value(batch_tf['r'] + self.gamma * target_tf, *clip_range)
         # Critic loss is now sum of losses of both critics
         self.Q_loss_tf = tf.reduce_mean(tf.square(tf.stop_gradient(target_tf) - self.main.Q_1_tf)) + tf.reduce_mean(tf.square(tf.stop_gradient(target_tf) - self.main.Q_2_tf))
 
@@ -393,7 +396,6 @@ class TD3():
         self.pi_loss_tf += self.action_l2 * tf.reduce_mean(tf.square(self.main.pi_tf / self.max_u))
 
         # Gradient of the critic loss with respect to variables of both critics
-        # Maybe other way is needed to access all critic variables !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         Q_grads_tf = tf.gradients(self.Q_loss_tf, self._vars('main/Q_1') + self._vars('main/Q_2'))
         pi_grads_tf = tf.gradients(self.pi_loss_tf, self._vars('main/pi'))
         assert len(self._vars('main/Q_1') + self._vars('main/Q_2')) == len(Q_grads_tf)
@@ -498,7 +500,6 @@ class TD3():
 
         # Delayed policy updates
         if self.total_it % self.policy_freq == 0:
-            print("updating actor in TD3!")
             self.pi_adam.update(pi_grad, self.pi_lr)
 
 
@@ -546,6 +547,11 @@ class ActorCritic:
             hidden (int): number of hidden units that should be used in hidden layers
             layers (int): number of hidden layers
         """
+
+        # Hardcoded for TD3 noise
+        self.policy_noise = 0.2
+        self.noise_clip = 0.5
+
         self.o_tf = inputs_tf['o']
         self.g_tf = inputs_tf['g']
         self.u_tf = inputs_tf['u']
@@ -565,10 +571,18 @@ class ActorCritic:
             # for policy training
             input_Q = tf.concat(axis=1, values=[o, g, self.pi_tf / self.max_u])
             self.Q_1_pi_tf = nn(input_Q, [self.hidden] * self.layers + [1])
+
             # for critic training
             input_Q = tf.concat(axis=1, values=[o, g, self.u_tf / self.max_u])
             self._input_Q = input_Q  # exposed for tests
             self.Q_1_tf = nn(input_Q, [self.hidden] * self.layers + [1], reuse=True)
+
+            # For TD3 noisy next action from pi_tf
+            noise = tf.random.normal(shape=tf.shape(self.u_tf)) * self.policy_noise
+            noise = tf.clip_by_value(noise, -self.noise_clip, self.noise_clip)
+            noisy_action = tf.clip_by_value(self.pi_tf + noise, -self.max_u, self.max_u)
+            input_Q = tf.concat(axis=1, values=[o, g, noisy_action / self.max_u])
+            self.Q_1_pi_tf_noisy = nn(input_Q, [self.hidden] * self.layers + [1], reuse=True)
 
         with tf.variable_scope('Q_2'):
             # for policy training
@@ -578,6 +592,14 @@ class ActorCritic:
             input_Q = tf.concat(axis=1, values=[o, g, self.u_tf / self.max_u])
             self._input_Q = input_Q  # exposed for tests
             self.Q_2_tf = nn(input_Q, [self.hidden] * self.layers + [1], reuse=True)
+
+            # For TD3 noisy next action from pi_tf
+            noise = tf.random.normal(shape=tf.shape(self.u_tf)) * self.policy_noise
+            noise = tf.clip_by_value(noise, -self.noise_clip, self.noise_clip)
+            noisy_action = tf.clip_by_value(self.pi_tf + noise, -self.max_u, self.max_u)
+            input_Q = tf.concat(axis=1, values=[o, g, noisy_action / self.max_u])
+            self.Q_2_pi_tf_noisy = nn(input_Q, [self.hidden] * self.layers + [1], reuse=True)
+
 
 
 

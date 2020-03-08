@@ -23,8 +23,8 @@ combinations = {
         "layers"       : [1],
         "use_target"   : [True],
         "sg_test_perc" : [0.1],
-        "use_rb"       : [False],
-        "run"          : [0]
+        "use_rb"       : [True],
+        "run"          : [0, 1]
     }
 
 hparams = [{}] * len(combinations["run"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])
