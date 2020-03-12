@@ -1,1 +1,0 @@
-{"sg_n": 0.1, "replay_k": 4, "sg_test_perc": 0.5, "use_target": false, "use_rb": "all", "ac_n": 0.2, "run": 0, "layers": 2}

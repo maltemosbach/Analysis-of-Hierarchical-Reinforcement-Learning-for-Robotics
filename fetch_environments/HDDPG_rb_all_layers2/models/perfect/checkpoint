@@ -1,2 +1,0 @@
-model_checkpoint_path: "/Users/maltemosbach/git/Master_thesis/fetch_environments/HDDPG_rb_all_layers2/models/perfect/HAC.ckpt-0"
-all_model_checkpoint_paths: "/Users/maltemosbach/git/Master_thesis/fetch_environments/HDDPG_rb_all_layers2/models/perfect/HAC.ckpt-0"
