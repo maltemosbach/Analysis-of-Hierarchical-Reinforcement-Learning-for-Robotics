@@ -9,16 +9,23 @@ from tensorboardX import SummaryWriter
 from tensorboard.plugins.hparams import api as hp
 import tensorflow as tf
 
-NUM_BATCH = 201
+import numpy as np
+
+
+NUM_BATCH = 7
 TEST_FREQ = 2
 
-num_test_episodes = 10
+num_test_episodes = 5
+
+success_rate_plt = np.zeros(np.ceil(NUM_BATCH/2).astype(int))
+x_axis = np.arange(0.0, np.ceil(NUM_BATCH/2), 1.0)
+print("success_rate_plt:", success_rate_plt)
+print("x_axis:", x_axis)
 
 def run_HAC(FLAGS,env,agent,writer,sess):
 
     Writer = writer
     Sess = sess
-    saved_perfect_agent = False
 
     # Print task summary
     print_summary(FLAGS,env)
@@ -58,19 +65,21 @@ def run_HAC(FLAGS,env,agent,writer,sess):
 
         # Save agent
         agent.save_model(episode)
+        agent.save_lowest_layer(episode)
            
         # Finish evaluating policy if tested prior batch
         if mix_train_test and batch % TEST_FREQ == 0:
             # Log performance
             success_rate = successful_episodes / num_test_episodes * 100
             print("\nTesting Success Rate %.2f%%" % success_rate)
+            success_rate_plt[i] = success_rate/100
             Writer.add_scalar("success_rate", success_rate/100, i)
             agent.log_tb(i)
-
             i += 1
             agent.FLAGS.test = False
 
             print("\n--- END TESTING ---\n")
+
 
 
 
@@ -93,6 +102,16 @@ def run_HAC(FLAGS,env,agent,writer,sess):
 
         except KeyboardInterrupt:
             pass
+
+    if agent.FALGS.layers == 2:
+        pass
+        o = np.array([1.5, 8.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        g = np.array([1.3, 1.0, 0.5])
+        u = np.empty((10, 10, 4)) # grid dim, grid dim, action dim
+        u[]
+        #agent.layers[1].policy.get_Q_values(o, g, u, use_target_net=False)
+
+    return np.copy(success_rate_plt)
 
 
     

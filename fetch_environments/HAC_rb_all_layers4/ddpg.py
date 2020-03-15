@@ -159,7 +159,7 @@ class DDPG():
         def reward_fun(ag_2, g):  # vectorized
             return env.gymEnv.compute_reward(achieved_goal=ag_2, desired_goal=g, info=0)
 
-        her_params = {'reward_fun': reward_fun, 'replay_k': hparams["replay_k"], 'replay_strategy': 'future'}
+        her_params = {'reward_fun': reward_fun, 'replay_k': hparams["replay_k"], 'replay_strategy': 'future', 'FLAGS': FLAGS}
 
         print("her_params:", her_params)
 

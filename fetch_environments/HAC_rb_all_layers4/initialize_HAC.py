@@ -28,9 +28,9 @@ combinations = {
         "layers"       : [2],
         "use_target"   : [False],
         "sg_test_perc" : [0.3],
-        "use_rb"       : ["none", "lowest", "all"], # none, lowest or all rn
+        "use_rb"       : ["all", "none", "lowest"], # none, lowest or all rn
         "algo"         : ["ddpg"],
-        "run"          : [0]
+        "run"          : [0, 1]
     }
 
 hparams = [{}] * len(combinations["run"])*len(combinations["algo"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])
@@ -89,7 +89,6 @@ for m in range(len(hparams)):
          file.write(json.dumps(hparams[m]))
 
 
-
     # Determine training options specified by user.  The full list of available options can be found in "options.py" file.
     FLAGS = parse_options()
 
@@ -105,9 +104,8 @@ for m in range(len(hparams)):
 
     if np.mod(m + 1, len(combinations["run"])) == 0:
         setups.append(sr_plt)
+        print("sr_plt:", sr_plt)
         sr_plt = []
-
-
 
 
     # Save models
@@ -115,20 +113,14 @@ for m in range(len(hparams)):
     if save_model:
         shutil.move("./models", modeldir)
 
-
+    print("setups:", setups)
 
     sess.close()
     tf.compat.v1.reset_default_graph()
 
-print("sr_plt:", sr_plt)
-print("setups:", setups)
-
-
-
-
 plot = True
 
 if plot:
-    create_plot(setups)
+    create_plot(setups, date)
 
     

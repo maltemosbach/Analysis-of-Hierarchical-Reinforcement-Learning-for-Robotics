@@ -1,7 +1,7 @@
 import numpy as np
 import time
 
-def make_sample_her_transitions(replay_strategy, replay_k, reward_fun):
+def make_sample_her_transitions(replay_strategy, replay_k, reward_fun, FLAGS):
     """Creates a sample function that can be used for HER experience replay.
     Args:
         replay_strategy (in ['future', 'none']): the HER replay strategy; if set to 'none',
@@ -99,7 +99,7 @@ def make_sample_her_transitions(replay_strategy, replay_k, reward_fun):
 
             penalizing_idxs = np.where(transitions['is_sgtt'] == [-1])[0]
             penalizing_transitions = {key: transitions[key][penalizing_idxs] for key in transitions.keys()}
-            penalizing_transitions['r'] = -5.0 * np.ones(penalizing_transitions['is_sgtt'].shape[0])
+            penalizing_transitions['r'] = -FLAGS.time_scale * np.ones(penalizing_transitions['is_sgtt'].shape[0])
             #penalizing_transitions['r'] = penalizing_transitions['r'].reshape(penalizing_transitions['is_sgtt'].shape)
             #print("penalizing_transitions:", penalizing_transitions)
 

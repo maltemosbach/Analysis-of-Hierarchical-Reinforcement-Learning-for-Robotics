@@ -1,0 +1,2 @@
+model_checkpoint_path: "/Users/maltemosbach/git/Master_thesis/fetch_environments/HAC_rb_all_layers4/models/HAC.ckpt-9"
+all_model_checkpoint_paths: "/Users/maltemosbach/git/Master_thesis/fetch_environments/HAC_rb_all_layers4/models/HAC.ckpt-9"
