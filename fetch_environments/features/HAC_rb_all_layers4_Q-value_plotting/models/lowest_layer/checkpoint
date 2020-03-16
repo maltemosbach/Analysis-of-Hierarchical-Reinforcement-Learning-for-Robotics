@@ -1,0 +1,5 @@
+model_checkpoint_path: "/Users/maltemosbach/git/Master_thesis/fetch_environments/features/HAC_rb_all_layers4_Q-value_plotting/models/lowest_layer/HAC.ckpt-9"
+all_model_checkpoint_paths: "/Users/maltemosbach/git/Master_thesis/fetch_environments/features/HAC_rb_all_layers4_Q-value_plotting/models/HAC.ckpt-1"
+all_model_checkpoint_paths: "/Users/maltemosbach/git/Master_thesis/fetch_environments/features/HAC_rb_all_layers4_Q-value_plotting/models/lowest_layer/HAC.ckpt-1"
+all_model_checkpoint_paths: "/Users/maltemosbach/git/Master_thesis/fetch_environments/features/HAC_rb_all_layers4_Q-value_plotting/models/HAC.ckpt-9"
+all_model_checkpoint_paths: "/Users/maltemosbach/git/Master_thesis/fetch_environments/features/HAC_rb_all_layers4_Q-value_plotting/models/lowest_layer/HAC.ckpt-9"
