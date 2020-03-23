@@ -1,0 +1,1 @@
+{"sg_test_perc": 0.1, "run": 0, "use_target": [false, false], "modules": ["ddpg", "actorcritic"], "env": "FetchReach-v1", "sg_n": 0.1, "use_rb": [true, false], "ac_n": 0.2, "layers": 1, "replay_k": 4}

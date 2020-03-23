@@ -1,2 +1,0 @@
-model_checkpoint_path: "/Users/maltemosbach/git/HAC_fetch/fetch_environments/hac_her_with_HER_replay_buffer/models/HAC.ckpt-9"
-all_model_checkpoint_paths: "/Users/maltemosbach/git/HAC_fetch/fetch_environments/hac_her_with_HER_replay_buffer/models/HAC.ckpt-9"

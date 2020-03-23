@@ -1,1 +1,0 @@
-{"ac_n": 0.2, "inp_norm": true, "sg_n": 0.1, "no_of_run": 0}

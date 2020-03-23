@@ -1,0 +1,1 @@
+{"env": "FetchReach-v1", "ac_n": 0.2, "use_target": [false, false], "run": 0, "replay_k": 4, "sg_n": 0.1, "use_rb": [false, false], "modules": ["ddpg", "actorcritic"], "sg_test_perc": 0.1, "layers": 1}
