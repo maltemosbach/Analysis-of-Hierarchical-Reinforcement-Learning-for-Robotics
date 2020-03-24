@@ -38,9 +38,15 @@ for j in range(len(date_paths)):
         current_path_to_graph = paths_to_graph[k]
 
         current_sr_list = []
+        current_Q_val_list = []
         for x in current_path_to_graph.iterdir():
             if str(x)[-12:-5] == "sr_run_":
                 current_sr_list.append(x)
+            elif str(x)[-21:-5] == "Q_val_table_run_":
+                current_Q_val_list.append(x)
+
+
+        time.sleep(100)
 
         test_graph = np.load(current_sr_list[0])
 
@@ -94,6 +100,43 @@ for j in range(len(date_paths)):
 
     plt.savefig("./figures/" + "success_rate_plot_" + dates[j] + ".jpg", dpi=400, facecolor='w', edgecolor='w',
         orientation='landscape',transparent=False, bbox_inches='tight')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

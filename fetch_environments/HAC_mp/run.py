@@ -26,10 +26,10 @@ The key hyperparameters are:
     modules (array of strs): Modules each layer should use (ddpg, actorcritic right now)
 """
 hyperparameters = {
-        "env"          : ['FetchPush-v1'],
+        "env"          : ['FetchReach-v1'],
         "ac_n"         : [0.2],
         "sg_n"         : [0.1],
-        "replay_k"     : [1, 4],
+        "replay_k"     : [2],
         "layers"       : [1],
         "use_target"   : [[False, False]],
         "sg_test_perc" : [0.1],
@@ -44,8 +44,8 @@ Parameters for the runs
     NUM_RUNS (int): Number of runs for each hyperparameter combination
     NUM_BATCH (int): Total number of batches for each run (one batch is made up of 10 (during testing) or 100 (during exploration) full episodes)
 """
-NUM_RUNS = 5
-NUM_BATCH = 801
+NUM_RUNS = 1
+NUM_BATCH = 5
 
 
 """ 3. ADDITIONAL OPTIONS

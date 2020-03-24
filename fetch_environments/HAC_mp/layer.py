@@ -64,7 +64,8 @@ class Layer():
 
 
         # Ceiling on buffer size
-        self.buffer_size_ceiling = 10**6
+        #self.buffer_size_ceiling = 10**6
+        self.buffer_size_ceiling = 10**7
 
         # Number of full episodes stored in replay buffer
         self.episodes_to_store = agent_params["episodes_to_store"]
