@@ -39,11 +39,9 @@ Options Include:
 11. Show Q-values ("--Q_values")
 - Show Q-values for each action by each level
 
-12. Use Tensorboard ("--tensorboard")
+12. Play the trained agent after training ("--play")
 
-13. Play the trained agent after training ("--play")
-
-14. Only restore lowest leyer for transfer learning ("--transfer")
+13. Only restore lowest leyer for transfer learning ("--transfer")
 
 """
 
@@ -117,12 +115,6 @@ def parse_options():
     )
 
     parser.add_argument(
-        '--tensorboard',
-        action='store_true',
-        help='Include to use tensorboard'
-    )
-
-    parser.add_argument(
         '--play',
         action='store_true',
         help='Include to show what the agent has learned'
@@ -133,6 +125,15 @@ def parse_options():
         action='store_true',
         help='Include to load lowest layer'
     )
+
+    parser.add_argument(
+        '-np', type=int,
+        help='Number of processes'
+    )
+
+
+
+
 
     FLAGS, unparsed = parser.parse_known_args()
 

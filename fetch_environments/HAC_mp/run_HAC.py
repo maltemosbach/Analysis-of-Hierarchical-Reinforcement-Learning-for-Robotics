@@ -8,22 +8,16 @@ from utils import print_summary
 from tensorboardX import SummaryWriter
 from tensorboard.plugins.hparams import api as hp
 import tensorflow as tf
-
 import numpy as np
 
 
-NUM_BATCH = 801
-TEST_FREQ = 2
 
-num_test_episodes = 10
+def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
 
-success_rate_plt = np.zeros(np.ceil(NUM_BATCH/2).astype(int))
-x_axis = np.arange(0.0, np.ceil(NUM_BATCH/2), 1.0)
+    TEST_FREQ = 2
+    num_test_episodes = 10
 
-def run_HAC(FLAGS,env,agent,writer,sess):
-
-    Writer = writer
-    Sess = sess
+    success_rate_plt = np.zeros(np.ceil(NUM_BATCH/2).astype(int))
 
     # Print task summary
     print_summary(FLAGS,env)
@@ -71,7 +65,7 @@ def run_HAC(FLAGS,env,agent,writer,sess):
             success_rate = successful_episodes / num_test_episodes * 100
             print("\nTesting Success Rate %.2f%%" % success_rate)
             success_rate_plt[i] = success_rate/100
-            Writer.add_scalar("success_rate", success_rate/100, i)
+            writer.add_scalar("success_rate", success_rate/100, i)
             agent.log_tb(i)
             i += 1
             agent.FLAGS.test = False

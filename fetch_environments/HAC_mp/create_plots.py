@@ -11,74 +11,73 @@ import time
 
 
 # Import arrays
-path = Path("./data")
-paths = []
-for x in path.iterdir():
-    paths.append(x)
-    print (x)
-
-#print("len(paths):", len(paths))
+datadir = Path("./data")
 dates = []
-for m in range(len(paths)):
-    dates.append(str(paths[m])[5:])
+date_paths = []
+for x in datadir.iterdir():
+    date_paths.append(x)
+    dates.append(str(x)[5:])
 
-#print("dates:", dates)
 
-assert len(paths) > 0, "No data found"
+assert len(dates) > 0, "No data found"
 
-path_to_graphs = paths[0]
 
-for j in range(len(paths)):
-    path_to_graphs = paths[j]
-    f=open(str(path_to_graphs) + "/title.txt", "r")
-    title =f.read()
+for j in range(len(date_paths)):
+    current_path = date_paths[j]
+    paths_to_graph = []
 
-    tmp2 = Path(path_to_graphs)
-    graphs = []
-    for x in tmp2.iterdir():
-        x = str(x)
-        if x[-4:] == ".npy":
-            graphs.append(x)
+    for x in current_path.iterdir():
+        if str(x)[-7:-1] == "graph_":
+            paths_to_graph.append(x)
+    f=open(str(paths_to_graph[0]) + "/title.txt", "r")  
+    title =f.read()  
 
-    test_graph = np.load(graphs[0])
+    plots = []
 
-    #print("test_graph:", test_graph)
-    #print("test_graph.shape:", test_graph.shape)
+    for k in range(len(paths_to_graph)):
+        current_path_to_graph = paths_to_graph[k]
 
-    plots = np.empty((len(graphs), test_graph.shape[0], test_graph.shape[1]))
+        current_sr_list = []
+        for x in current_path_to_graph.iterdir():
+            if str(x)[-12:-5] == "sr_run_":
+                current_sr_list.append(x)
 
-    for i in range(len(graphs)):
-        plots[i, :, :] = np.load(graphs[i])
-        
-    #print("plots:", plots)
-    #print("plots.shape:", plots.shape)
+        test_graph = np.load(current_sr_list[0])
 
+        current_sr_array = np.empty((len(current_sr_list), test_graph.shape[0]))
+
+        #print("current_sr_array:", current_sr_array)
+
+        for i in range(len(current_sr_list)):
+            current_sr_array[i, :] = np.load(current_sr_list[i])
+
+        #print("current_sr_array:", current_sr_array)
+        plots.append(current_sr_array)
 
     # Creating graphs for the average testing success rate
 
     colors = [(0.0, 0.0, 1.0, 1.0), (0.0, 1.0, 0.0, 1.0), (1.0, 0.0, 0.0, 1.0), (0.7, 0.5, 0.85, 1.0), (0.0, 0.0, 0.0, 1.0), (0.5, 0.5, 0.5, 1.0), (0.5, 0.5, 0.0, 1.0), (0.5, 0.0, 0.5, 1.0), (0.0, 0.5, 0.5, 1.0)]
 
-    x = np.arange(0, test_graph.shape[1], 1)
-    print("x:", x)
+    x = np.arange(0, test_graph.shape[0], 1)
+    #print("x:", x)
     fig, ax = plt.subplots()
 
     # Calculate interquartile range
-    intq_range = np.empty((plots.shape[0], plots.shape[2]), dtype=float)
-    for i in range(plots.shape[0]):
-        intq_range[i] = iqr(plots[i, :, :], axis=0)
+    intq_range = np.empty((len(plots), plots[0].shape[1]), dtype=float)
+    for i in range(len(plots)):
+        intq_range[i] = iqr(plots[i], axis=0)
 
-    print("intq_range:", intq_range)
+    #print("intq_range:", intq_range)
     # Calculate average success rate
-    average = np.empty((plots.shape[0], plots.shape[2]), dtype=float)
-    for i in range(plots.shape[0]):
-        average[i] = np.mean(plots[i, :, :], axis=0)
-    print("average:", average)
-
+    average = np.empty((len(plots), plots[0].shape[1]), dtype=float)
+    for i in range(len(plots)):
+        average[i] = np.mean(plots[i], axis=0)
+    #print("average:", average)
 
     yerr = intq_range
 
 
-    for k in range(plots.shape[0]):
+    for k in range(len(plots)):
         y = average[k]
         yerr = intq_range[k]
         ax.plot(x, y, color=colors[k])
@@ -86,7 +85,7 @@ for j in range(len(paths)):
 
     plt.title(title)
     plt.ylabel('Median Test Success Rate')
-    ax.set_xlim((0, plots.shape[2]-1))
+    ax.set_xlim((0, plots[0].shape[1]-1))
     ax.set_ylim((0.0, 1.2))
     plt.xlabel('Epoch')
     plt.grid(True)
