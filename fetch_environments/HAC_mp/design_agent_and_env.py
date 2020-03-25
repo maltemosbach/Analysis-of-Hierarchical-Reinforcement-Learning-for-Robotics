@@ -16,10 +16,10 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
 
     FLAGS.layers = hparams["layers"]    # Enter number of levels in agent hierarchy
 
-    FLAGS.time_scale = 10    # Enter max sequence length in which each policy will specialize
+    FLAGS.time_scale = 8   # Enter max sequence length in which each policy will specialize
 
     # Enter max number of atomic actions.  This will typically be FLAGS.time_scale**(FLAGS.layers).  However, in the UR5 Reacher task, we use a shorter episode length.
-    max_actions = 50
+    max_actions = 150
 
     goal_space_test = [[1.15, 1.45], [0.5, 1.0], [0.4, 0.45]]
 

@@ -27,14 +27,6 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
     # Create Q_val_tables (step (0,1), layer (0,1), x-dim (10), y-dim (14))
     Q_val_table = np.ones((2, 2, 10, 14))
 
-
-
-
-
-
-
-
-
     
     # Determine training mode.  If not testing and not solely training, interleave training and testing to track progress
     mix_train_test = False
@@ -77,7 +69,6 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
             # Log performance
             success_rate = successful_episodes / num_test_episodes * 100
             print("\nTesting Success Rate %.2f%%" % success_rate)
-            print("appending success rate to position", ind)
             success_rate_plt[ind] = success_rate/100
             writer.add_scalar("success_rate", success_rate/100, ind)
             agent.log_tb(ind)
@@ -87,10 +78,10 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
             print("\n--- END TESTING ---\n")
 
         # Create Q-function matrix if it is the first or last batch
-        if batch == 0 or batch == NUM_BATCH-1:
+        if batch == 5 or batch == NUM_BATCH-1:
             print("Q-val is called!")
-            Q_vals_layer_0 = None
-            Q_vals_layer_1 = None
+            Q_vals_layer_0 = np.ones((10, 14))
+            Q_vals_layer_1 = np.ones((10, 14))
 
             # Defining observations for different fetch envs
             if env.name == "FetchReach-v1":
@@ -99,12 +90,12 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
                 o = np.zeros([10, 14, 25])
 
             # - - - - Q-vals for FetchReach - - - - 
-            # Goal is placed at to left of the plane. For layer 0 the possible states in the plane are evaluated.
-            # For layer 1 the position of the gripper is the bottom right and the actions (subgoals) in the plane
+            # Goal is placed near the top left of the plane. For layer 0 the possible states in the plane are evaluated.
+            # For layer 1 the position of the gripper is the closer to the bottom right and the actions (subgoals) in the plane
             # are evaluated.
             if env.name == "FetchReach-v1":
-                g = np.array([1.05, 0.4, 0.5])
-                Q_vals_layer_0 = np.empty((10, 14))
+                g = np.array([1.15, 0.6, 0.5])
+                Q_vals_layer_0 = np.ones((10, 14))
 
                 for i in range(10):
                     for j in range(14):
@@ -112,9 +103,9 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
                         Q_vals_layer_0[i, j] = agent.layers[0].policy.get_Q_values_pi(o[i, j, :], g, np.array([0, 0, 0, 0]), use_target_net=False)
 
                 if agent.FLAGS.layers > 1:
-                    g = np.array([1.05, 0.4, 0.5])
-                    Q_vals_layer_1 = np.empty((10, 14))
-                    o = np.array([1.55, 1.1, 0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                    g = np.array([1.15, 0.6, 0.5])
+                    Q_vals_layer_1 = np.ones((10, 14))
+                    o = np.array([1.30, 0.8, 0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
                     u = np.empty((10, 14, 3))
 
                     for i in range(10):
@@ -123,9 +114,38 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
                             if agent.layers[1].policy is not None:
                                 Q_vals_layer_1[i, j] = agent.layers[1].policy.get_Q_values_u(o, g, u[i, j, :], use_target_net=False)
                             elif agent.layers[1].critic is not None:
-                                Q_vals_layer1[i, j] = agent.layers[1].get_Q_value(o, g, u[i, j, :])
+                                Q_vals_layer_1[i, j] = agent.layers[1].critic.get_Q_value(np.reshape(o,(1,10)), np.reshape(g,(1,3)), np.reshape(u[i, j, :],(1,3)))
 
-            if batch == 0:
+
+            # - - - - Q-vals for FetchPush - - - - 
+            elif env.name == "FetchPush-v1" and agent.FLAGS.layers > 1:
+                g = np.array([1.15, 0.6, 0.5])
+                o = np.array([1.5, 1.0, 0.45,  1.4, 0.9, 0.45, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+                for i in range(10):
+                    for j in range(14):
+                        u[i, j, :] = np.array([1.075 + i*0.05, 0.425 +j*0.05, 0.5])
+                            if agent.layers[1].policy is not None:
+                                Q_vals_layer_1[i, j] = agent.layers[1].policy.get_Q_values_u(o, g, u[i, j, :], use_target_net=False)
+                            elif agent.layers[1].critic is not None:
+                                Q_vals_layer_1[i, j] = agent.layers[1].critic.get_Q_value(np.reshape(o,(1,25)), np.reshape(g,(1,3)), np.reshape(u[i, j, :],(1,3)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            if batch == 5:
                 Q_val_table[0, 0, :, :] = Q_vals_layer_0
                 Q_val_table[0, 1, :, :] = Q_vals_layer_1
             elif batch == NUM_BATCH-1:

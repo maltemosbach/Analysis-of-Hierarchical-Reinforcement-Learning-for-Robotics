@@ -30,7 +30,7 @@ hyperparameters = {
         "ac_n"         : [0.2],
         "sg_n"         : [0.1],
         "replay_k"     : [2],
-        "layers"       : [1],
+        "layers"       : [2],
         "use_target"   : [[False, False]],
         "sg_test_perc" : [0.1],
         "use_rb"       : [[False, False]],
@@ -45,7 +45,7 @@ Parameters for the runs
     NUM_BATCH (int): Total number of batches for each run (one batch is made up of 10 (during testing) or 100 (during exploration) full episodes)
 """
 NUM_RUNS = 1
-NUM_BATCH = 5
+NUM_BATCH = 11
 
 
 """ 3. ADDITIONAL OPTIONS
@@ -87,7 +87,7 @@ for i in range(len(hparams)):
 # Testing a trained agent
 if FLAGS.test:
     assert len(hparams) == 1, "To test a trained agent only one parameter configuration should be given"
-    init_HAC(date, hparams[0], 1, None, FLAGS, NUM_BATCH)
+    init_HAC(date, hparams[0], 1, None, FLAGS, NUM_BATCH, False)
 
 
 # Training new agents
