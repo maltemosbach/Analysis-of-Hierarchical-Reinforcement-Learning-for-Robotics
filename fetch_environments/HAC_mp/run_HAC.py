@@ -79,7 +79,6 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
 
         # Create Q-function matrix if it is the first or last batch
         if batch == 5 or batch == NUM_BATCH-1:
-            print("Q-val is called!")
             Q_vals_layer_0 = np.ones((10, 14))
             Q_vals_layer_1 = np.ones((10, 14))
 
@@ -125,23 +124,10 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
                 for i in range(10):
                     for j in range(14):
                         u[i, j, :] = np.array([1.075 + i*0.05, 0.425 +j*0.05, 0.5])
-                            if agent.layers[1].policy is not None:
-                                Q_vals_layer_1[i, j] = agent.layers[1].policy.get_Q_values_u(o, g, u[i, j, :], use_target_net=False)
-                            elif agent.layers[1].critic is not None:
-                                Q_vals_layer_1[i, j] = agent.layers[1].critic.get_Q_value(np.reshape(o,(1,25)), np.reshape(g,(1,3)), np.reshape(u[i, j, :],(1,3)))
-
-
-
-
-
-
-
-
-
-
-
-
-
+                        if agent.layers[1].policy is not None:
+                            Q_vals_layer_1[i, j] = agent.layers[1].policy.get_Q_values_u(o, g, u[i, j, :], use_target_net=False)
+                        elif agent.layers[1].critic is not None:
+                            Q_vals_layer_1[i, j] = agent.layers[1].critic.get_Q_value(np.reshape(o,(1,25)), np.reshape(g,(1,3)), np.reshape(u[i, j, :],(1,3)))
 
 
 

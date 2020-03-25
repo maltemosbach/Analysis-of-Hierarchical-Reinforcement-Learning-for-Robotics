@@ -1,5 +1,6 @@
 import numpy as np
 from experience_buffer import ExperienceBuffer
+from replay_buffer import ReplayBuffer
 from time import sleep
 import tensorflow as tf
 import os
@@ -9,6 +10,7 @@ from actor import Actor
 from critic import Critic
 
 from baselines.her.util import convert_episode_to_batch_major
+from her_sampler import make_sample_her_transitions
 
 
 
@@ -59,6 +61,11 @@ class Layer():
         else:
             self.time_limit = env.max_actions
 
+        self.T = self.time_limit
+        self.dimo = self.dims['o']
+        self.dimg = self.dims['g']
+        self.dimu = self.dims['u']
+
         self.current_state = None
         self.goal = None
 
@@ -82,9 +89,30 @@ class Layer():
         # Buffer size = transitions per attempt * attempts per episode * num of episodes stored
         self.buffer_size = min(self.trans_per_attempt * self.time_limit**(self.FLAGS.layers-1 - self.layer_number) * self.episodes_to_store, self.buffer_size_ceiling)
 
-        # self.buffer_size = 10000000
         self.batch_size = 256
         self.exp_buffer = ExperienceBuffer(self.buffer_size, self.batch_size)
+
+        # Configure the replay buffer.
+        if self.layer_number == 0:
+            buffer_shapes = {'g': (self.T, self.dimg), 'u': (self.T, self.dimu), 'ag': (self.T+1, self.dimg), 'o': (self.T+1, self.dimo)}
+        else:
+            num_attempts = np.ceil(env.max_actions / self.T).astype(int)
+            buffer_shapes = {'g': (num_attempts, self.dimg), 'u': (num_attempts, self.dimu), 'ag': (num_attempts+1, self.dimg), 'o': (num_attempts+1, self.dimo), 'is_sgtt': (num_attempts, 1)}
+
+
+        buffer_size_in_episodes = 20000
+
+        # info is not needed for reward function
+        def reward_fun(ag_2, g):  # vectorized
+            return env.gymEnv.compute_reward(achieved_goal=ag_2, desired_goal=g, info=0)
+
+        her_params = {'reward_fun': reward_fun, 'replay_k': hparams["replay_k"], 'replay_strategy': 'future', 'FLAGS': FLAGS}
+
+        sample_her_transitions = make_sample_her_transitions(**her_params)
+        self.sample_transitions = sample_her_transitions
+
+        self.replay_buffer = ReplayBuffer(buffer_shapes, buffer_size_in_episodes, self.sample_transitions)
+        self.replay_buffer.clear_buffer()
 
         # Create buffer to store not yet finalized goal replay transitions
         self.temp_goal_replay_storage = []
@@ -108,7 +136,7 @@ class Layer():
 
 
         if hparams["modules"][self.layer_number] == "ddpg":
-            self.policy = DDPG(self.sess, env, hparams, self.batch_size, self.exp_buffer, self.layer_number, FLAGS, self.hidden, self.layers, self.time_limit, use_replay_buffer=hparams["use_rb"][self.layer_number], action_l2=self.action_l2)
+            self.policy = DDPG(self.sess, env, hparams, self.batch_size, self.exp_buffer, self.replay_buffer, self.sample_transitions, self.layer_number, FLAGS, self.hidden, self.layers, self.time_limit, use_replay_buffer=hparams["use_rb"][self.layer_number], action_l2=self.action_l2)
             self.critic = None
             self.actor = None
         elif hparams["modules"][self.layer_number] == "actorcritic":

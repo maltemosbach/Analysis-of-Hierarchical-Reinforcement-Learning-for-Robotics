@@ -8,8 +8,8 @@ from baselines.her.util import (
     import_function, store_args, flatten_grads, transitions_in_episode_batch, convert_episode_to_batch_major)
 from baselines.common.mpi_adam import MpiAdam
 
-from replay_buffer import ReplayBuffer
-from her_sampler import make_sample_her_transitions
+
+
 
 # Helper function
 def dims_to_shapes(input_dims):
@@ -18,7 +18,7 @@ def dims_to_shapes(input_dims):
 
 class DDPG():
 
-    def __init__(self, sess, env, hparams, batch_size, experience_buffer, layer_number, FLAGS, hidden, layers, T, use_replay_buffer=False, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
+    def __init__(self, sess, env, hparams, batch_size, experience_buffer, replay_buffer, sample_transitions, layer_number, FLAGS, hidden, layers, T, use_replay_buffer=False, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
         gamma=0.98, action_l2=1.0, norm_eps=0.01, norm_clip=5, clip_obs=200):
 
         """The new DDPG policy used inside the HAC algorithm
@@ -27,6 +27,7 @@ class DDPG():
             env: environment object containing the Gym envionment
             hparams: hyperparameters from initialize HAC
             experience_buffer: experience buffer from original HAC implementation
+            replay_buffer: 
             layer_number: number of this layyer in the HAC hierarchy
             FLAGS: flags determining how the algorithm is run
             hidden (int): number of perceptrons in each layer
@@ -45,6 +46,8 @@ class DDPG():
         self.scope = "DDPG_layer_" + str(layer_number)
 
         self.experience_buffer = experience_buffer
+        self.replay_buffer = replay_buffer
+        self.sample_transitions = sample_transitions
 
         # DDPG parameters
         self.norm_eps = norm_eps
@@ -123,28 +126,7 @@ class DDPG():
 
             self._create_network(self.input_dims)
 
-
-        # Configure the replay buffer.
-        if layer_number == 0:
-            buffer_shapes = {'g': (self.T, self.dimg), 'u': (self.T, self.dimu), 'ag': (self.T+1, self.dimg), 'o': (self.T+1, self.dimo)}
-        else:
-            num_attempts = np.ceil(env.max_actions / self.T).astype(int)
-            buffer_shapes = {'g': (num_attempts, self.dimg), 'u': (num_attempts, self.dimu), 'ag': (num_attempts+1, self.dimg), 'o': (num_attempts+1, self.dimo), 'is_sgtt': (num_attempts, 1)}
-
-
-        buffer_size_in_episodes = 20000
-
-        # info is not needed for reward function
-        def reward_fun(ag_2, g):  # vectorized
-            return env.gymEnv.compute_reward(achieved_goal=ag_2, desired_goal=g, info=0)
-
-        her_params = {'reward_fun': reward_fun, 'replay_k': hparams["replay_k"], 'replay_strategy': 'future', 'FLAGS': FLAGS}
-
-        sample_her_transitions = make_sample_her_transitions(**her_params)
-        self.sample_transitions = sample_her_transitions
-
-        self.buffer = ReplayBuffer(buffer_shapes, buffer_size_in_episodes, self.sample_transitions)
-        self.buffer.clear_buffer()
+        
 
     # Return main or target actions for given observation and goal
     def get_actions(self, o, g, use_target_net=False):
@@ -262,7 +244,7 @@ class DDPG():
     # Sample batch from HER replay buffer using new HER_Sampler
     def sample_batch_replay_buffer(self):
 
-        transitions = self.buffer.sample(self.batch_size)
+        transitions = self.replay_buffer.sample(self.batch_size)
 
         o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
         ag, ag_2 = transitions['ag'], transitions['ag_2']
@@ -290,7 +272,7 @@ class DDPG():
                        'o' is of size T+1, others are of size T
         """
 
-        self.buffer.store_episode(episode_batch)
+        self.replay_buffer.store_episode(episode_batch)
 
         if update_stats:
             # add transitions to normalizer
