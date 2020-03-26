@@ -193,15 +193,21 @@ class Agent():
     # Log any variables to tensorboard
     def log_tb(self, step):
         log_loss = True
+        ret = []
         if log_loss:
             if self.hparams["modules"][0] == "ddpg":
                 self.writer.add_histogram('layer_0_actor_loss (ddpg)', self.layers[0].policy.actor_loss, step)
                 self.writer.add_scalar('layer_0_critic_loss (ddpg)', self.layers[0].policy.critic_loss, step)
+                ret.append(self.layers[0].policy.critic_loss)
             if self.hparams["layers"] > 1:
                 if self.hparams["modules"][1] == "ddpg":
                     self.writer.add_scalar('layer_1_critic_loss (ddpg)', self.layers[1].policy.critic_loss, step)
+                    ret.append(self.layers[1].policy.critic_loss)
                 elif self.hparams["modules"][1] == "actorcritic":
                     self.writer.add_scalar('layer_1_critic_loss (actorcritic)', self.layers[1].critic.loss_val, step)
+                    ret.append(self.layers[1].critic.loss_val)
+        
+        return ret
 
 
 

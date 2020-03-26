@@ -37,11 +37,13 @@ def init_HAC(date, hparams, num_runs, data_dir, FLAGS, NUM_BATCH, save_models, i
         agent, env = design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams)
 
         # Begin training
-        success_rates_run, Q_val_table_run = run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH)
+        success_rates_run, Q_val_table_run, critic_loss_layer0, critic_loss_layer1 = run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH)
 
         if FLAGS.retrain:
             np.save(data_dir + "/sr_run_" + str(idx_run) + ".npy", success_rates_run)
             np.save(data_dir + "/Q_val_table_run_" + str(idx_run) + ".npy", Q_val_table_run)
+            np.save(data_dir + "/critic_loss_layer0_run_" + str(idx_run) + ".npy", critic_loss_layer0)
+            np.save(data_dir + "/critic_loss_layer1_run_" + str(idx_run) + ".npy", critic_loss_layer1)
             if m == 0:
                 with open(data_dir + "/title.txt", 'w') as outfile:
                     outfile.write(hparams["env"])

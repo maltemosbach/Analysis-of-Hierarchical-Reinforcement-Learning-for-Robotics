@@ -18,7 +18,8 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
     num_test_episodes = 10
 
     success_rate_plt = np.zeros(np.ceil(NUM_BATCH/2).astype(int))
-
+    critic_loss_layer0 = -1*np.ones(np.ceil(NUM_BATCH/2).astype(int))
+    critic_loss_layer1 = -1*np.ones(np.ceil(NUM_BATCH/2).astype(int))
     # Print task summary
     print_summary(FLAGS,env)
     ind = 0
@@ -71,7 +72,11 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
             print("\nTesting Success Rate %.2f%%" % success_rate)
             success_rate_plt[ind] = success_rate/100
             writer.add_scalar("success_rate", success_rate/100, ind)
-            agent.log_tb(ind)
+            Critic_losses = agent.log_tb(ind)
+            critic_loss_layer0[ind] = Critic_losses[0]
+            if agent.hparams["layers"] > 1:
+                critic_loss_layer1[ind] = Critic_losses[1]
+
             ind += 1
             agent.FLAGS.test = False
 
@@ -166,4 +171,4 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
             pass
 
 
-    return np.copy(success_rate_plt), np.copy(Q_val_table)
+    return np.copy(success_rate_plt), np.copy(Q_val_table), np.copy(critic_loss_layer0), np.copy(critic_loss_layer1)
