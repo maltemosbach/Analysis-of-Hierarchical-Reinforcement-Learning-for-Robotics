@@ -8,6 +8,8 @@ from utils import get_combinations
 from options import parse_options
 from pathlib import Path
 
+FLAGS = parse_options()
+
 
 
 #  #  #  #  #  D E F I N E    A L L    P A R A M E T E R S  #  #  #  #  #
@@ -26,11 +28,11 @@ The key hyperparameters are:
     modules (array of strs): Modules each layer should use (ddpg, actorcritic right now)
 """
 hyperparameters = {
-        "env"          : ['FetchPush-v1'],
+        "env"          : ['FetchReach-v1'],
         "ac_n"         : [0.2],
         "sg_n"         : [0.1],
         "replay_k"     : [4],
-        "layers"       : [1, 2],
+        "layers"       : [2],
         "use_target"   : [[False, False]],
         "sg_test_perc" : [0.1],
         "use_rb"       : [[True, False], [False, False]],
@@ -39,13 +41,18 @@ hyperparameters = {
     }
 
 
-""" 2. PARAMETERS OF THE RUNS
+""" 2. PARAMETERS FOR RUNS AND TIME-SCALES
 Parameters for the runs
     NUM_RUNS (int): Number of runs for each hyperparameter combination
     NUM_BATCH (int): Total number of batches for each run (one batch is made up of 10 (during testing) or 100 (during exploration) full episodes)
+    FLAGS.time_scale (int): Max sequence length in which each policy will specialize
+    FLAGS>max_actions (int): Max number of atomic actions
 """
 NUM_RUNS = 1
-NUM_BATCH = 601
+NUM_BATCH = 17
+
+FLAGS.time_scale = 10
+FLAGS.max_actions = 100
 
 
 """ 3. ADDITIONAL OPTIONS
@@ -68,7 +75,6 @@ save_models = True
 
 
 hparams = get_combinations(hyperparameters)
-FLAGS = parse_options()
 
 if FLAGS.test == False and FLAGS.retrain == False:
     FLAGS.retrain = True

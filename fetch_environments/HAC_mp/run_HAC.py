@@ -101,7 +101,7 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
                         o[i, j, :] = np.array([1.075 + i*0.05, 0.425 +j*0.05, 0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
                         Q_vals_layer_0[i, j] = agent.layers[0].policy.get_Q_values_pi(o[i, j, :], g, np.array([0, 0, 0, 0]), use_target_net=False)
 
-                if agent.FLAGS.layers > 1:
+                if agent.hparams["layers"] > 1:
                     g = np.array([1.15, 0.6, 0.5])
                     Q_vals_layer_1 = np.ones((10, 14))
                     o = np.array([1.30, 0.8, 0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -117,9 +117,10 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
 
 
             # - - - - Q-vals for FetchPush - - - - 
-            elif env.name == "FetchPush-v1" and agent.FLAGS.layers > 1:
+            elif env.name == "FetchPush-v1" and agent.hparams["layers"] > 1:
                 g = np.array([1.15, 0.6, 0.5])
                 o = np.array([1.5, 1.0, 0.45,  1.4, 0.9, 0.45, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                u = np.empty((10, 14, 3))
 
                 for i in range(10):
                     for j in range(14):

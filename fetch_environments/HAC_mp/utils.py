@@ -52,7 +52,6 @@ def print_summary(FLAGS,env):
     print("\n- - - - - - - - - - -")
     print("Task Summary: ","\n")
     print("Environment: ", env.name)
-    print("Number of Layers: ", FLAGS.layers)
     print("Time Limit per Layer: ", FLAGS.time_scale)
     print("Max Episode Time Steps: ", env.max_actions)
     print("Retrain: ", FLAGS.retrain)

@@ -14,13 +14,6 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
     Hparams = hparams
 
 
-    FLAGS.layers = hparams["layers"]    # Enter number of levels in agent hierarchy
-
-    FLAGS.time_scale = 5   # Enter max sequence length in which each policy will specialize
-
-    # Enter max number of atomic actions.  This will typically be FLAGS.time_scale**(FLAGS.layers).  However, in the UR5 Reacher task, we use a shorter episode length.
-    max_actions = 50
-
     goal_space_test = [[1.15, 1.45], [0.5, 1.0], [0.4, 0.45]]
 
 
@@ -36,7 +29,6 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
 
     dist_threshold = 0.05
     end_goal_thresholds = np.array([dist_threshold, dist_threshold, dist_threshold])
-
 
     # Provide range for each dimension of subgoal space in order to configure subgoal actor networks.  Subgoal space can be the same as the state space or some other projection out of the state space.
     subgoal_bounds = np.array([[1.05, 1.55], [0.4, 1.1], [0.4, 1.1]])
@@ -61,7 +53,7 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
 
 
     # Instantiate and return agent and environment
-    env = Environment(hparams["env"], goal_space_test, project_state_to_end_goal, end_goal_thresholds, subgoal_bounds, project_state_to_subgoal, subgoal_thresholds, max_actions, FLAGS.show)
+    env = Environment(hparams["env"], goal_space_test, project_state_to_end_goal, end_goal_thresholds, subgoal_bounds, project_state_to_subgoal, subgoal_thresholds, FLAGS.max_actions, FLAGS.show)
 
     agent = Agent(FLAGS,env,agent_params, Writer, Writer_graph, Sess, hparams)
 

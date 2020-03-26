@@ -25,7 +25,7 @@ class Agent():
         self.subgoal_test_perc = hparams["sg_test_perc"]
 
         # Create agent with number of levels specified by user
-        self.layers = [Layer(i,FLAGS,env,self.sess,self.writer,agent_params,hparams) for i in range(FLAGS.layers)]
+        self.layers = [Layer(i,FLAGS,env,self.sess,self.writer,agent_params,hparams) for i in range(hparams["layers"])]
 
 
         # Below attributes will be used help save network parameters
@@ -41,7 +41,7 @@ class Agent():
         self.writer_graph.add_graph(sess.graph)
 
         # goal_array will store goal for each layer of agent.
-        self.goal_array = [None for i in range(FLAGS.layers)]
+        self.goal_array = [None for i in range(hparams["layers"])]
 
         self.current_state = None
 
@@ -61,7 +61,7 @@ class Agent():
     def check_goals(self,env):
 
         # goal_status is vector showing status of whether a layer's goal has been achieved
-        goal_status = [False for i in range(self.FLAGS.layers)]
+        goal_status = [False for i in range(self.hparams["layers"])]
 
         max_lay_achieved = None
 
@@ -69,12 +69,12 @@ class Agent():
         proj_subgoal = env.project_state_to_subgoal(env.sim, self.current_state)
         proj_end_goal = env.project_state_to_end_goal(env.sim, self.current_state)
 
-        for i in range(self.FLAGS.layers):
+        for i in range(self.hparams["layers"]):
 
             goal_achieved = True
 
             # If at highest layer, compare to end goal thresholds
-            if i == self.FLAGS.layers - 1:
+            if i == self.hparams["layers"] - 1:
 
                 # Check dimensions are appropriate
                 assert len(proj_end_goal) == len(self.goal_array[i]) == len(env.end_goal_thresholds), "Projected end goal, actual end goal, and end goal thresholds should have same dimensions"
@@ -157,19 +157,19 @@ class Agent():
     def train(self,env, episode_num):
 
         # Select initial state from in initial state space, defined in environment.py
-        self.current_state = env.reset_sim(self.goal_array[self.FLAGS.layers - 1])
+        self.current_state = env.reset_sim(self.goal_array[self.hparams["layers"] - 1])
         #print("Initial State: ", self.current_state)
 
         # Select final goal from final goal space, defined in "design_agent_and_env.py"
-        self.goal_array[self.FLAGS.layers - 1] = env.get_next_goal(self.FLAGS.test)
-        print("Next End Goal: ", self.goal_array[self.FLAGS.layers - 1])
+        self.goal_array[self.hparams["layers"] - 1] = env.get_next_goal(self.FLAGS.test)
+        print("Next End Goal: ", self.goal_array[self.hparams["layers"] - 1])
 
         # Reset step counter
         self.steps_taken = 0
 
 
         # Train for an episode
-        goal_status, max_lay_achieved = self.layers[self.FLAGS.layers-1].train(self,env, episode_num = episode_num)
+        goal_status, max_lay_achieved = self.layers[self.hparams["layers"]-1].train(self,env, episode_num = episode_num)
 
 
         # Update actor/critic networks if not testing
@@ -177,7 +177,7 @@ class Agent():
             self.learn()
 
         # Return whether end goal was achieved
-        return goal_status[self.FLAGS.layers-1]
+        return goal_status[self.hparams["layers"]-1]
 
 
     # Save performance evaluations
@@ -197,7 +197,7 @@ class Agent():
             if self.hparams["modules"][0] == "ddpg":
                 self.writer.add_histogram('layer_0_actor_loss (ddpg)', self.layers[0].policy.actor_loss, step)
                 self.writer.add_scalar('layer_0_critic_loss (ddpg)', self.layers[0].policy.critic_loss, step)
-            if self.FLAGS.layers > 1:
+            if self.hparams["layers"] > 1:
                 if self.hparams["modules"][1] == "ddpg":
                     self.writer.add_scalar('layer_1_critic_loss (ddpg)', self.layers[1].policy.critic_loss, step)
                 elif self.hparams["modules"][1] == "actorcritic":

@@ -77,7 +77,7 @@ class DDPG():
         self.input_dims["o"] = env.state_dim
 
         # Dimensions of goal placeholder will differ depending on layer level
-        if layer_number == FLAGS.layers - 1:
+        if layer_number == hparams["layers"] - 1:
             self.input_dims["g"] = env.end_goal_dim
         else:
             self.input_dims["g"] = env.subgoal_dim

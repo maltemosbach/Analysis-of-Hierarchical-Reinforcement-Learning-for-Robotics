@@ -43,7 +43,7 @@ class Layer():
         self.dims["o"] = env.state_dim
 
         # Dimensions of goal placeholder will differ depending on layer level
-        if layer_number == FLAGS.layers - 1:
+        if layer_number == hparams["layers"] - 1:
             self.dims["g"] = env.end_goal_dim
         else:
             self.dims["g"] = env.subgoal_dim
@@ -56,7 +56,7 @@ class Layer():
 
 
         # Set time limit for each layer.  If agent uses only 1 layer, time limit is the max number of low-level actions allowed in the episode (i.e, env.max_actions).
-        if FLAGS.layers > 1:
+        if hparams["layers"] > 1:
             self.time_limit = FLAGS.time_scale
         else:
             self.time_limit = env.max_actions
@@ -87,7 +87,7 @@ class Layer():
             self.trans_per_attempt = (1 + self.num_replay_goals) * self.time_limit + int(self.time_limit/3)
 
         # Buffer size = transitions per attempt * attempts per episode * num of episodes stored
-        self.buffer_size = min(self.trans_per_attempt * self.time_limit**(self.FLAGS.layers-1 - self.layer_number) * self.episodes_to_store, self.buffer_size_ceiling)
+        self.buffer_size = min(self.trans_per_attempt * self.time_limit**(self.hparams["layers"]-1 - self.layer_number) * self.episodes_to_store, self.buffer_size_ceiling)
 
         self.batch_size = 256
         self.exp_buffer = ExperienceBuffer(self.buffer_size, self.batch_size)
@@ -396,7 +396,7 @@ class Layer():
             return True
 
         # NOTE: During testing, agent will have env.max_action attempts to achieve goal
-        elif agent.FLAGS.test and self.layer_number < agent.FLAGS.layers-1 and attempts_made >= self.time_limit:
+        elif agent.FLAGS.test and self.layer_number < agent.hparams["layers"]-1 and attempts_made >= self.time_limit:
             return True
 
         else:
@@ -443,7 +443,7 @@ class Layer():
         self.maxed_out = False
 
         # Display all subgoals if visualizing training and current layer is bottom layer
-        if self.layer_number == 0 and agent.FLAGS.show and agent.FLAGS.layers > 1:
+        if self.layer_number == 0 and agent.FLAGS.show and agent.hparams["layers"] > 1:
             env.display_subgoals(agent.goal_array)
             # env.sim.data.mocap_pos[3] = env.project_state_to_end_goal(env.sim,self.current_state)
             # print("Subgoal Pos: ", env.sim.data.mocap_pos[1])
@@ -460,7 +460,7 @@ class Layer():
         o_new = np.empty((1, self.dims['o']))
         ag_new = np.empty((1, self.dims['g']))
 
-        if self.layer_number == self.FLAGS.layers-1:
+        if self.layer_number == self.hparams["layers"]-1:
             ag[:] = env.project_state_to_end_goal(env.sim, self.current_state)
         else:
             ag[:] = env.project_state_to_subgoal(env.sim, self.current_state)
@@ -520,11 +520,11 @@ class Layer():
 
             # Print if goal from current layer as been achieved
             if goal_status[self.layer_number]:
-                if self.layer_number < agent.FLAGS.layers - 1:
+                if self.layer_number < agent.hparams["layers"] - 1:
                     print("SUBGOAL ACHIEVED")
                 print("\nEpisode %d, Layer %d, Attempt %d Goal Achieved" % (episode_num, self.layer_number, attempts_made))
                 print("Goal: ", self.goal)
-                if self.layer_number == agent.FLAGS.layers - 1:
+                if self.layer_number == agent.hparams["layers"] - 1:
                     print("Hindsight Goal: ", env.project_state_to_end_goal(env.sim, agent.current_state))
                 else:
                     print("Hindsight Goal: ", env.project_state_to_subgoal(env.sim, agent.current_state))
@@ -554,19 +554,19 @@ class Layer():
                 if next_subgoal_test:
                     # The subgoal has not been achieved
                     if agent.layers[self.layer_number-1].maxed_out:
-                        self.append_transition_to_episode(env, o, hindsight_u, ag, self.g, obs, achieved_goals, acts, goals, info_is_sgtt, self.layer_number, goal_status, self.FLAGS.layers-1, is_sgtt=-1)
+                        self.append_transition_to_episode(env, o, hindsight_u, ag, self.g, obs, achieved_goals, acts, goals, info_is_sgtt, self.layer_number, goal_status, self.hparams["layers"]-1, is_sgtt=-1)
                     # The subgoal has been achieved
                     else:
-                        self.append_transition_to_episode(env, o, hindsight_u, ag, self.g, obs, achieved_goals, acts, goals, info_is_sgtt, self.layer_number, goal_status, self.FLAGS.layers-1, is_sgtt=1)
+                        self.append_transition_to_episode(env, o, hindsight_u, ag, self.g, obs, achieved_goals, acts, goals, info_is_sgtt, self.layer_number, goal_status, self.hparams["layers"]-1, is_sgtt=1)
                 # It is not a subgoal testing transition
                 else:
-                    self.append_transition_to_episode(env, o, hindsight_u, ag, self.g, obs, achieved_goals, acts, goals, info_is_sgtt, self.layer_number, goal_status, self.FLAGS.layers-1, is_sgtt=0)
+                    self.append_transition_to_episode(env, o, hindsight_u, ag, self.g, obs, achieved_goals, acts, goals, info_is_sgtt, self.layer_number, goal_status, self.hparams["layers"]-1, is_sgtt=0)
 
                 # Create action replay transition by evaluating hindsight action given current goal
                 self.perform_action_replay(hindsight_action, agent.current_state, goal_status)
 
                 # Create preliminary goal replay transitions.  The goal and reward in these transitions will be finalized when this layer has run out of attempts or the goal has been achieved.
-                self.create_prelim_goal_replay_trans(hindsight_action, agent.current_state, env, agent.FLAGS.layers)
+                self.create_prelim_goal_replay_trans(hindsight_action, agent.current_state, env, agent.hparams["layers"])
 
 
                 # Penalize subgoals if subgoal testing and subgoal was missed by lower layers after maximum number of attempts
@@ -584,7 +584,7 @@ class Layer():
                 print("Original Action: ", action)
                 print("Next State: ", agent.current_state)
                 print("Goal: ", self.goal)
-                if self.layer_number == agent.FLAGS.layers - 1:
+                if self.layer_number == agent.hparams["layers"] - 1:
                     print("Hindsight Goal: ", env.project_state_to_end_goal(env.sim, agent.current_state))
                 else:
                     print("Hindsight Goal: ", env.project_state_to_subgoal(env.sim, agent.current_state))
@@ -600,7 +600,7 @@ class Layer():
             # if self.return_to_higher_level(max_lay_achieved, agent, env, attempts_made):
             if (max_lay_achieved is not None and max_lay_achieved >= self.layer_number) or agent.steps_taken >= env.max_actions or attempts_made >= self.time_limit:
 
-                if self.layer_number == agent.FLAGS.layers-1:
+                if self.layer_number == agent.hparams["layers"]-1:
                     print("HL Attempts Made: ", attempts_made)
 
                 # If goal was not achieved after max number of attempts, set maxed out flag to true
@@ -610,7 +610,7 @@ class Layer():
 
                 # If not testing, finish goal replay by filling in missing goal and reward values before returning to prior level.
                 if not agent.FLAGS.test:
-                    if self.layer_number == agent.FLAGS.layers - 1:
+                    if self.layer_number == agent.hparams["layers"] - 1:
                         goal_thresholds = env.end_goal_thresholds
                     else:
                         goal_thresholds = env.subgoal_thresholds
