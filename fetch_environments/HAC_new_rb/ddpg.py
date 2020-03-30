@@ -20,7 +20,7 @@ def dims_to_shapes(input_dims):
 
 class DDPG():
 
-    def __init__(self, sess, env, hparams, batch_size, experience_buffer, replay_buffer, mal_buffer, sample_transitions, layer_number, FLAGS, hidden, layers, T, use_replay_buffer=False, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
+    def __init__(self, sess, env, hparams, batch_size, experience_buffer, replay_buffer, transitions_buffer, sample_transitions, layer_number, FLAGS, hidden, layers, T, buffer_type='transitions', Q_lr=0.001, pi_lr=0.001, tau=0.05, 
         gamma=0.98, action_l2=1.0, norm_eps=0.01, norm_clip=5, clip_obs=200):
 
         """The new DDPG policy used inside the HAC algorithm
@@ -30,6 +30,7 @@ class DDPG():
             hparams: hyperparameters from initialize HAC
             experience_buffer: experience buffer from original HAC implementation
             replay_buffer: 
+            transitions_buffer: 
             layer_number: number of this layyer in the HAC hierarchy
             FLAGS: flags determining how the algorithm is run
             hidden (int): number of perceptrons in each layer
@@ -49,7 +50,7 @@ class DDPG():
 
         self.experience_buffer = experience_buffer
         self.replay_buffer = replay_buffer
-        self.mal_buffer = mal_buffer
+        self.transitions_buffer = transitions_buffer
         self.sample_transitions = sample_transitions
 
         # DDPG parameters
@@ -67,7 +68,7 @@ class DDPG():
         self.clip_obs = clip_obs
 
         self.T = T
-        self.use_replay_buffer = use_replay_buffer
+        self.buffer_type = buffer_type
 
         
         # Exposed for tensorboard logging
@@ -153,7 +154,7 @@ class DDPG():
         return ret
 
 
-    # Return Q-Values for given observation, goal and action taken
+    # Return Q-Values for given observation, goal and policy action
     def get_Q_values_pi(self, o, g, u, use_target_net=False):
 
         policy = self.target if use_target_net else self.main
@@ -174,7 +175,7 @@ class DDPG():
         else:
             return ret
 
-        # Return Q-Values for given observation, goal and action taken
+    # Return Q-Values for given observation, goal and action taken
     def get_Q_values_u(self, o, g, u, use_target_net=False):
 
         policy = self.target if use_target_net else self.main
@@ -245,55 +246,49 @@ class DDPG():
 
 
     # Sample batch from HER replay buffer using new HER_Sampler
-    def sample_batch_mal_buffer(self):
-
-        transitions = self.mal_buffer.sample(self.batch_size)
-        #for key in transitions.keys():
-        #    print("(mal_buffer) transitions[{k}].shape:".format(k=key), transitions[key].shape)
-
-        o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
-        transitions['o'], transitions['g'] = self._preprocess_og(o, g)
-        transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
-
-        transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
-
-        #print("transitions_batch (mal_buffer):", transitions_batch)
-        return transitions_batch
-
-
-
-
-
-    # Sample batch from HER replay buffer using new HER_Sampler
     def sample_batch_replay_buffer(self):
 
         transitions = self.replay_buffer.sample(self.batch_size)
-        #for key in transitions.keys():
-        #    print("(replay_buffer) transitions[{k}].shape:".format(k=key), transitions[key].shape)
 
         o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
         transitions['o'], transitions['g'] = self._preprocess_og(o, g)
         transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
 
         transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
-        #print("transitions_batch (replay_buffer):", transitions_batch)
+
         return transitions_batch
+
+
+    # Sample batch from my new transitions buffer
+    def sample_batch_transitions_buffer(self):
+
+        transitions = self.transitions_buffer.sample(self.batch_size)
+
+        o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
+        transitions['o'], transitions['g'] = self._preprocess_og(o, g)
+        transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
+
+        transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
+
+        return transitions_batch
+
+
 
 
     def stage_batch(self, batch=None):
         if batch is None:
-            if self.use_replay_buffer:
-                #batch = self.sample_batch_replay_buffer()
-                batch = self.sample_batch_mal_buffer()
-                #time.sleep(1000)
-            else:
+            if self.buffer_type == "experience":
                 batch = self.sample_batch_experience_buffer()
+            elif self.buffer_type == "replay":
+                batch = self.sample_batch_replay_buffer()
+            elif self.buffer_type == "transitions":
+                batch = self.sample_batch_transitions_buffer()         
                 
         assert len(self.buffer_ph_tf) == len(batch)
         self.sess.run(self.stage_op, feed_dict=dict(zip(self.buffer_ph_tf, batch)))
 
 
-    def store_episode(self, episode_batch, update_stats=True):
+    def store_episode_replay_buffer(self, episode_batch, update_stats=True):
         """
         episode_batch: array of batch_size x (T or T+1) x dim_key
                        'o' is of size T+1, others are of size T
@@ -319,13 +314,13 @@ class DDPG():
             self.g_stats.recompute_stats()
 
 
-    def store_episode_mal(self, episode_batch, update_stats=True):
+    def store_episode_transitions_buffer(self, episode_batch, update_stats=True):
         """
         episode_batch: array of batch_size x (T or T+1) x dim_key
                        'o' is of size T+1, others are of size T
         """
 
-        self.mal_buffer.store_episode(episode_batch)
+        self.transitions_buffer.store_episode(episode_batch)
 
         if update_stats:
             # add transitions to normalizer

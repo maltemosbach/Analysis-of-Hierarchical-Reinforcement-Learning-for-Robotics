@@ -2,21 +2,24 @@ import numpy as np
 import time
 
 
-class MaltesBuffer:
-    def __init__(self, buffer_shapes, size_in_transitions, replay_k, reward_fun):
-        """Creates my new buffer.
+class TransitionsBuffer:
+    def __init__(self, buffer_shapes, size_in_transitions, replay_k, reward_fun, sampling_strategy="future"):
+        """Creates my new type 'transitions buffer'
         Args:
             buffer_shapes (dict of ints): the shape of all arguments of the buffer
             size_in_transitions (int): the size of the buffer, measured in transitions
-            sample_transitions (function): a function that samples from the replay buffer
+            replay_k (int): number of HER transitions for every regular transition
+            reward_fun (function): reward function
+            sampling_strategy (str): HER sampling strategy (only future right now)
         """
         self.buffer_shapes = buffer_shapes
         self.size_in_transitions = size_in_transitions
         self.reward_fun = reward_fun
+        self.sampling_strategy = sampling_strategy
 
 
 
-        # Should include o, g, u, r, o_2, is_t
+        # Should include o, g, u, r, o_2, is_t (later add is_sgtt)
         # {key: array(transition_number, key_shape)}
         self.finished_transitions = {key: np.empty([self.size_in_transitions, buffer_shapes[key]])
                                     for key in buffer_shapes.keys()}
@@ -25,7 +28,6 @@ class MaltesBuffer:
 
         # memory management
         self.current_size = 0
-        self.n_transitions_stored = 0
         self.size = size_in_transitions
 
         assert replay_k >= 0
@@ -43,11 +45,7 @@ class MaltesBuffer:
 
         batch_sizes = {key: episode_batch[key].shape for key in episode_batch.keys()}
 
-        #print("batch_sizes:", batch_sizes)
-        # length (timesteps) of this episode
         T = batch_sizes['u'][0]
-        #print("T:", T)
-
 
         # Creating new observation and new achieved goal
         episode_batch['o_2'] = episode_batch['o'][1:, :]
@@ -65,45 +63,35 @@ class MaltesBuffer:
 
         # raw episode batch finished with o, ag, g, u, o_2, ag_2
         # would get passed to her_sampler now
-        #print("episode_batch:", episode_batch)
 
         
         # Calculate number of total transitions to store
         total_num_new_trans = (1+self.replay_k) * T
 
-        #print("total_num_new_trans:", total_num_new_trans)
-
-        #print("np.repeat(episode_batch['u'], 3, axis=0):", np.repeat(episode_batch['u'], 3, axis=0))
-        #print("np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0) :", np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0))
-
+        # Generate transitions by repeating episode batch to generate regular and HER transitions
         transitions = {key: np.repeat(episode_batch[key], 1 + self.replay_k, axis=0) for key in episode_batch.keys()}
 
         indexes = np.arange((1 + self.replay_k) * T)
 
+        # timestep of each transition inside the episode
         timesteps = np.repeat(np.arange(T), 1 + self.replay_k)
 
+        # indexes for which HER transitions will be formed
         her_indexes = np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0)
 
-        #print("indexes:", indexes)
-        #print("her_indexes:", her_indexes)
-        #print("timesteps:", timesteps)
-
+        # offset in timesteps for 'future' sampling strategy
         future_offset = np.random.uniform(size=total_num_new_trans) * (T - timesteps)
         future_offset = future_offset.astype(int)
-        #print("future_offset:", future_offset)
 
+        # timesteps from which future achieved goals will be sampled
         future_t = (timesteps + 1 + future_offset)[her_indexes]
 
-        #print("future_t:", future_t)
-
+        # future achieved goals from the same episode
         future_ag = episode_batch_save['ag'][future_t]
-
-        #print("future_ag:", future_ag)
 
 
         # Substituting goal with a future achieved state from the same episode for all her transitions
         transitions['g'][her_indexes] = future_ag
-
 
 
         # Calculating reward for all transitions
@@ -119,17 +107,6 @@ class MaltesBuffer:
         transitions['is_t'] = transitions['is_t'].reshape(total_num_new_trans, 1)
 
 
-        #print("self.finished_transitions['u'][idxs].shape:", self.finished_transitions['u'][idxs].shape)
-        #print("transitions['u'].shape:", transitions['u'].shape)
-        #print("self.finished_transitions['o'][idxs].shape:", self.finished_transitions['o'][idxs].shape)
-        #print("transitions['o'].shape:", transitions['o'].shape)
-        #print("self.finished_transitions['r'][idxs].shape:", self.finished_transitions['r'][idxs].shape)
-        #print("transitions['r'].shape:", transitions['r'].shape)
-        #print("self.finished_transitions['is_t'][idxs].shape:", self.finished_transitions['is_t'][idxs].shape)
-        #print("transitions['is_t'].shape:", transitions['is_t'].shape)
-
-
-
         # Get indexes where to store transitions
         idxs = self._get_storage_idx(total_num_new_trans)
         #print("idxs:", idxs)
@@ -143,6 +120,40 @@ class MaltesBuffer:
 
 
 
+
+
+
+
+
+    # Resets storing index
+    def clear_buffer(self):
+        self.current_size = 0
+
+
+    # Gives current size in transitions
+    def get_current_size(self):
+        return self.current_size
+
+
+    # Equivalent to sampling returns from replay_buffer
+    def sample(self, batch_size):
+        """Returns a dict {key: array(batch_size x shapes[key])}
+        """
+
+        assert self.current_size > 0
+
+        transitions = {}
+        t_samples = np.random.randint(self.current_size, size=batch_size)
+        
+        for key in self.finished_transitions.keys():
+            transitions[key] = self.finished_transitions[key][t_samples]
+
+        transitions['r'] = transitions['r'].reshape(batch_size,)
+
+        return transitions
+
+
+    # Get indexes where to store new transitions
     def _get_storage_idx(self, inc=None):
         inc = inc or 1   # size increment
         assert inc <= self.size, "Batch committed to replay is too large!"
@@ -162,37 +173,6 @@ class MaltesBuffer:
         if inc == 1:
             idx = idx[0]
         return idx
-
-    def get_current_size(self):
-        return self.current_size
-
-
-
-    def clear_buffer(self):
-        self.current_size = 0
-
-
-
-    def sample(self, batch_size):
-        """Returns a dict {key: array(batch_size x shapes[key])}
-        """
-
-        #print("sample new buffer is called!")
-
-        transitions = {}
-        t_samples = np.random.randint(self.current_size, size=batch_size)
-        #print("t_samples:", t_samples)
-
-        assert self.current_size > 0
-        for key in self.finished_transitions.keys():
-            transitions[key] = self.finished_transitions[key][t_samples]
-
-        transitions['r'] = transitions['r'].reshape(batch_size,)
-
-
-        #print("transitions:", transitions)
-
-        return transitions
 
 
 

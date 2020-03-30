@@ -2,8 +2,8 @@
 import numpy as np
 from experience_buffer import ExperienceBuffer
 from replay_buffer import ReplayBuffer
-from Maltes_buffer import MaltesBuffer
-from time import sleep
+from transitions_buffer import TransitionsBuffer
+import time
 import tensorflow as tf
 import os
 
@@ -105,7 +105,7 @@ class Layer():
 
         print("buffer_shapes for layer ", self.layer_number, ": ", buffer_shapes)
 
-        buffer_size_in_transitions = 10**7
+        buffer_size_in_transitions = 10**6
 
         # info is not needed for reward function
         def reward_fun(ag_2, g):  # vectorized
@@ -119,30 +119,8 @@ class Layer():
         self.replay_buffer = ReplayBuffer(buffer_shapes, buffer_size_in_transitions, self.T, self.sample_transitions)
         self.replay_buffer.clear_buffer()
 
-
-        buffer_size_in_transitions = 1000000
-        mal_buffer_shapes = {'o': self.dimo, 'g': self.dimg, 'u': self.dimu, 'r': 1, 'o_2': self.dimo}
-        self.mal_buffer = MaltesBuffer(mal_buffer_shapes, buffer_size_in_transitions, hparams["replay_k"], reward_fun)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        transitions_buffer_shapes = {'o': self.dimo, 'g': self.dimg, 'u': self.dimu, 'r': 1, 'o_2': self.dimo}
+        self.transitions_buffer = TransitionsBuffer(transitions_buffer_shapes, buffer_size_in_transitions, hparams["replay_k"], reward_fun)
 
 
 
@@ -164,11 +142,11 @@ class Layer():
         assert hparams["modules"][0] == "ddpg", "Lowest layer should be a ddpg module"
 
         if hparams["modules"][self.layer_number] == "actorcritic":
-            assert hparams["use_rb"][self.layer_number] == False, "The replay buffer can not be used with the original actor-critic module"
+            assert hparams["buffer"][self.layer_number] == "experience", "Only the experience buffer can be used with the original actor-critic module"
 
 
         if hparams["modules"][self.layer_number] == "ddpg":
-            self.policy = DDPG(self.sess, env, hparams, self.batch_size, self.exp_buffer, self.replay_buffer, self.mal_buffer, self.sample_transitions, self.layer_number, FLAGS, self.hidden, self.layers, self.time_limit, use_replay_buffer=hparams["use_rb"][self.layer_number], action_l2=self.action_l2)
+            self.policy = DDPG(self.sess, env, hparams, self.batch_size, self.exp_buffer, self.replay_buffer, self.transitions_buffer, self.sample_transitions, self.layer_number, FLAGS, self.hidden, self.layers, self.time_limit, buffer_type=hparams["buffer"][self.layer_number], action_l2=self.action_l2)
             self.critic = None
             self.actor = None
         elif hparams["modules"][self.layer_number] == "actorcritic":
@@ -416,11 +394,11 @@ class Layer():
         # Return to higher level if (i) a higher level goal has been reached, (ii) maxed out episode time steps (env.max_actions), (iii) not testing and layer is out of attempts, and (iv) testing, layer is not the highest level, and layer is out of attempts.  NOTE: during testing, highest level will continue to ouput subgoals until either (i) the maximum number of episdoe time steps or (ii) the end goal has been achieved.
 
         # Return to previous level when any higher level goal achieved.
-        if max_lay_achieved is not None and max_lay_achieved >= self.layer_number and not self.hparams["use_rb"][self.layer_number]:
+        if max_lay_achieved is not None and max_lay_achieved >= self.layer_number and self.hparams["buffer"][self.layer_number] != "replay":
             return True
 
         # Trying this variation for replay buffer
-        elif max_lay_achieved is not None and max_lay_achieved >= self.layer_number and self.hparams["use_rb"][self.layer_number]:
+        elif max_lay_achieved is not None and max_lay_achieved >= self.layer_number and agent.FLAGS.test:
             return True
                 
         # Return when out of time
@@ -469,7 +447,7 @@ class Layer():
     # Learn to achieve goals with actions belonging to appropriate time scale.  "goal_array" contains the goal states for the current layer and all higher layers
     def train(self, agent, env, subgoal_test = False, episode_num = None):
 
-        # print("\nTraining Layer %d" % self.layer_number)
+        print("\nTraining Layer %d" % self.layer_number)
 
         # Set layer's current state and new goal state
         self.goal = agent.goal_array[self.layer_number]
@@ -651,10 +629,6 @@ class Layer():
 
 
 
-
-
-
-
                 # If not testing, finish goal replay by filling in missing goal and reward values before returning to prior level.
                 if not agent.FLAGS.test:
                     if self.layer_number == agent.hparams["layers"] - 1:
@@ -666,7 +640,7 @@ class Layer():
 
                 # Under certain circumstances, the highest layer will not seek a new end goal
                 if self.return_to_higher_level(max_lay_achieved, agent, env, attempts_made):
-                    #print("returning to highler level!!!")
+
                     if not agent.FLAGS.test:
                         obs.append(o.copy())
                         achieved_goals.append(ag.copy())
@@ -686,7 +660,10 @@ class Layer():
                                    is_sgtt=info_is_sgtt)
                         episode = convert_episode_to_batch_major(episode)
 
-                        self.policy.store_episode_mal(episode)
+                        if self.hparams["buffer"][self.layer_number] == "transitions":
+                            self.policy.store_episode_transitions_buffer(episode)
+                        elif self.hparams["buffer"][self.layer_number] == "replay":
+                            self.policy.store_episode_replay_buffer(episode)
 
                     return goal_status, max_lay_achieved
 
@@ -696,18 +673,19 @@ class Layer():
     def learn(self, num_updates):
 
         if self.hparams["modules"][self.layer_number] == "ddpg":
-            print("learning layer {layer_number} ({module}) with {buffer} buffer".format(layer_number=self.layer_number, module=self.hparams["modules"][self.layer_number], buffer=("replay" if self.hparams["use_rb"][self.layer_number] == True else "experience")))
+            print("learning layer {layer_number} ({module}) with {buffer} buffer".format(layer_number=self.layer_number, module=self.hparams["modules"][self.layer_number], buffer=self.hparams["buffer"][self.layer_number]))
             # Update nets if replay buffer is large enough
-            if self.exp_buffer.size >= self.batch_size or self.hparams["use_rb"][self.layer_number]:
+            if self.exp_buffer.size >= self.batch_size or self.hparams["buffer"][self.layer_number] != "experience":
                 # Update main nets num_updates times
                 for _ in range(num_updates):
                     self.policy.train()
+
 
                 # Update all target nets
                 self.policy.update_target_net()
 
         elif self.hparams["modules"][self.layer_number] == "actorcritic":
-            print("learning layer {layer_number} ({module}) with {buffer} buffer".format(layer_number=self.layer_number, module=self.hparams["modules"][self.layer_number], buffer=("replay" if self.hparams["use_rb"][self.layer_number] == True else "experience")))
+            print("learning layer {layer_number} ({module}) with {buffer} buffer".format(layer_number=self.layer_number, module=self.hparams["modules"][self.layer_number], buffer=self.hparams["buffer"][self.layer_number]))
             for _ in range(num_updates):
                 # Update weights of non-target networks
                 if self.exp_buffer.size >= self.batch_size:

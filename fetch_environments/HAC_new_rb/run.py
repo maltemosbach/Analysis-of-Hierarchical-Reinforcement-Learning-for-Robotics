@@ -24,7 +24,7 @@ The key hyperparameters are:
     layers (int): Number of hierarchical layers in the algorithm (1, 2)
     use_target (array of booleans): Whether each layer should use target networks
     sg_test_perc (float): Percentage of subgoal testing transitions
-    use_rb (array of booleans): Whether each layer should use the replay buffer or standard experience buffer
+    buffer (array of strs): Which buffer each layer should use ('experience', 'replay', 'transitions')
     modules (array of strs): Modules each layer should use (ddpg, actorcritic right now)
 """
 hyperparameters = {
@@ -33,10 +33,10 @@ hyperparameters = {
         "sg_n"         : [0.1],
         "replay_k"     : [4],
         "layers"       : [1],
-        "use_target"   : [[False, False]],
+        "use_target"   : [[False]],
         "sg_test_perc" : [0.1],
-        "use_rb"       : [[True, False], [False, False]],
-        "modules"      : [["ddpg", "actorcritic"]],
+        "buffer"       : [['transitions'], ['experience']],
+        "modules"      : [["ddpg"]],
 
     }
 

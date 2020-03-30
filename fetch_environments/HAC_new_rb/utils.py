@@ -97,7 +97,7 @@ class normalizer:
 
 
 def get_combinations(combinations):
-    hparams = [{}] *len(combinations["modules"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])*len(combinations["env"])
+    hparams = [{}] *len(combinations["modules"])*len(combinations["buffer"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"])*len(combinations["env"])
 
     for h in range(len(combinations["env"])):
         for i in range(len(combinations["ac_n"])):
@@ -106,9 +106,9 @@ def get_combinations(combinations):
                     for l in range(len(combinations["layers"])):
                         for m in range(len(combinations["use_target"])):
                             for n in range(len(combinations["sg_test_perc"])):
-                                for o in range(len(combinations["use_rb"])):
+                                for o in range(len(combinations["buffer"])):
                                     for p in range(len(combinations["modules"])):
-                                        hparams[h*len(combinations["modules"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"]) + i*len(combinations["modules"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"]) + j*len(combinations["modules"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"]) + k*len(combinations["modules"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"]) + l*len(combinations["modules"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"])*len(combinations["use_target"]) + m*len(combinations["modules"])*len(combinations["use_rb"])*len(combinations["sg_test_perc"]) + n*len(combinations["modules"])*len(combinations["use_rb"]) + o*len(combinations["modules"]) + p] = {
+                                        hparams[h*len(combinations["modules"])*len(combinations["buffer"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"])*len(combinations["ac_n"]) + i*len(combinations["modules"])*len(combinations["buffer"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"])*len(combinations["sg_n"]) + j*len(combinations["modules"])*len(combinations["buffer"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"])*len(combinations["replay_k"]) + k*len(combinations["modules"])*len(combinations["buffer"])*len(combinations["sg_test_perc"])*len(combinations["use_target"])*len(combinations["layers"]) + l*len(combinations["modules"])*len(combinations["buffer"])*len(combinations["sg_test_perc"])*len(combinations["use_target"]) + m*len(combinations["modules"])*len(combinations["buffer"])*len(combinations["sg_test_perc"]) + n*len(combinations["modules"])*len(combinations["buffer"]) + o*len(combinations["modules"]) + p] = {
                                             "env"           : combinations["env"][h],
                                             "ac_n"          : combinations["ac_n"][i],
                                             "sg_n"          : combinations["sg_n"][j],
@@ -116,7 +116,7 @@ def get_combinations(combinations):
                                             "layers"        : combinations["layers"][l],
                                             "use_target"    : combinations["use_target"][m],
                                             "sg_test_perc"  : combinations["sg_test_perc"][n],
-                                            "use_rb"        : combinations["use_rb"][o],
+                                            "buffer"        : combinations["buffer"][o],
                                             "modules"       : combinations["modules"][p]
 
                                             }

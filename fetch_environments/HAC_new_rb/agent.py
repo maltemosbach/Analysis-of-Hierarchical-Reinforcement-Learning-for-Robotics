@@ -196,25 +196,28 @@ class Agent():
         ret = []
         if log_loss:
             if self.hparams["modules"][0] == "ddpg":
-                self.writer.add_histogram('layer_0_actor_loss (ddpg)', self.layers[0].policy.actor_loss, step)
-                self.writer.add_scalar('layer_0_critic_loss (ddpg)', self.layers[0].policy.critic_loss, step)
-                if self.hparams["use_rb"][0]:
+                self.writer.add_histogram('layer_0_actor_loss_ddpg', self.layers[0].policy.actor_loss, step)
+                self.writer.add_scalar('layer_0_critic_loss_ddpg', self.layers[0].policy.critic_loss, step)
+                if self.hparams["buffer"][0] == "replay":
                     self.writer.add_scalar('layer 0 replay_buffer size', self.layers[0].replay_buffer.get_current_size(), step)
-                    self.writer.add_scalar('layer 0 mal_buffer size', self.layers[0].mal_buffer.get_current_size(), step)
-                else:
+                elif self.hparams["buffer"][0] == "transitions":  
+                    self.writer.add_scalar('layer 0 transitions_buffer size', self.layers[0].transitions_buffer.get_current_size(), step)
+                elif self.hparams["buffer"][0] == "experience":  
                     self.writer.add_scalar('layer 0 experience_buffer size', self.layers[0].exp_buffer.size, step)
 
                 ret.append(self.layers[0].policy.critic_loss)
             if self.hparams["layers"] > 1:
                 if self.hparams["modules"][1] == "ddpg":
-                    self.writer.add_scalar('layer_1_critic_loss (ddpg)', self.layers[1].policy.critic_loss, step)
-                    if self.hparams["use_rb"][1]:
+                    self.writer.add_scalar('layer_1_critic_loss_ddpg', self.layers[1].policy.critic_loss, step)
+                    if self.hparams["buffer"][1] == "replay":
                         self.writer.add_scalar('layer 1 replay_buffer size', self.layers[1].replay_buffer.get_current_size(), step)
-                    else:
+                    elif self.hparams["buffer"][1] == "transitions":  
+                        self.writer.add_scalar('layer 1 transitions_buffer size', self.layers[1].transitions_buffer.get_current_size(), step)
+                    elif self.hparams["buffer"][1] == "experience":  
                         self.writer.add_scalar('layer 1 experience_buffer size', self.layers[1].exp_buffer.size, step)
                     ret.append(self.layers[1].policy.critic_loss)
                 elif self.hparams["modules"][1] == "actorcritic":
-                    self.writer.add_scalar('layer_1_critic_loss (actorcritic)', self.layers[1].critic.loss_val, step)
+                    self.writer.add_scalar('layer_1_critic_loss_actorcritic', self.layers[1].critic.loss_val, step)
                     self.writer.add_scalar('layer 1 experience_buffer size', self.layers[1].exp_buffer.size, step)
                     ret.append(self.layers[1].critic.loss_val)
         
