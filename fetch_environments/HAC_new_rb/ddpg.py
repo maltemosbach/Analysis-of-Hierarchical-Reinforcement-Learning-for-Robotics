@@ -8,6 +8,8 @@ from baselines.her.util import (
     import_function, store_args, flatten_grads, transitions_in_episode_batch, convert_episode_to_batch_major)
 from baselines.common.mpi_adam import MpiAdam
 
+import time
+
 
 
 
@@ -18,7 +20,7 @@ def dims_to_shapes(input_dims):
 
 class DDPG():
 
-    def __init__(self, sess, env, hparams, batch_size, experience_buffer, replay_buffer, sample_transitions, layer_number, FLAGS, hidden, layers, T, use_replay_buffer=False, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
+    def __init__(self, sess, env, hparams, batch_size, experience_buffer, replay_buffer, mal_buffer, sample_transitions, layer_number, FLAGS, hidden, layers, T, use_replay_buffer=False, Q_lr=0.001, pi_lr=0.001, tau=0.05, 
         gamma=0.98, action_l2=1.0, norm_eps=0.01, norm_clip=5, clip_obs=200):
 
         """The new DDPG policy used inside the HAC algorithm
@@ -47,6 +49,7 @@ class DDPG():
 
         self.experience_buffer = experience_buffer
         self.replay_buffer = replay_buffer
+        self.mal_buffer = mal_buffer
         self.sample_transitions = sample_transitions
 
         # DDPG parameters
@@ -242,22 +245,47 @@ class DDPG():
 
 
     # Sample batch from HER replay buffer using new HER_Sampler
-    def sample_batch_replay_buffer(self):
+    def sample_batch_mal_buffer(self):
 
-        transitions = self.replay_buffer.sample(self.batch_size)
+        transitions = self.mal_buffer.sample(self.batch_size)
+        #for key in transitions.keys():
+        #    print("(mal_buffer) transitions[{k}].shape:".format(k=key), transitions[key].shape)
 
         o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
         transitions['o'], transitions['g'] = self._preprocess_og(o, g)
         transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
 
         transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
+
+        #print("transitions_batch (mal_buffer):", transitions_batch)
+        return transitions_batch
+
+
+
+
+
+    # Sample batch from HER replay buffer using new HER_Sampler
+    def sample_batch_replay_buffer(self):
+
+        transitions = self.replay_buffer.sample(self.batch_size)
+        #for key in transitions.keys():
+        #    print("(replay_buffer) transitions[{k}].shape:".format(k=key), transitions[key].shape)
+
+        o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
+        transitions['o'], transitions['g'] = self._preprocess_og(o, g)
+        transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
+
+        transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
+        #print("transitions_batch (replay_buffer):", transitions_batch)
         return transitions_batch
 
 
     def stage_batch(self, batch=None):
         if batch is None:
             if self.use_replay_buffer:
-                batch = self.sample_batch_replay_buffer()
+                #batch = self.sample_batch_replay_buffer()
+                batch = self.sample_batch_mal_buffer()
+                #time.sleep(1000)
             else:
                 batch = self.sample_batch_experience_buffer()
                 
@@ -289,6 +317,34 @@ class DDPG():
 
             self.o_stats.recompute_stats()
             self.g_stats.recompute_stats()
+
+
+    def store_episode_mal(self, episode_batch, update_stats=True):
+        """
+        episode_batch: array of batch_size x (T or T+1) x dim_key
+                       'o' is of size T+1, others are of size T
+        """
+
+        self.mal_buffer.store_episode(episode_batch)
+
+        if update_stats:
+            # add transitions to normalizer
+            episode_batch['o_2'] = episode_batch['o'][:, 1:, :]
+            episode_batch['ag_2'] = episode_batch['ag'][:, 1:, :]
+            num_normalizing_transitions = transitions_in_episode_batch(episode_batch)
+            transitions = self.sample_transitions(episode_batch, num_normalizing_transitions)
+
+            o, g, ag = transitions['o'], transitions['g'], transitions['ag']
+            transitions['o'], transitions['g'] = self._preprocess_og(o, g)
+            # No need to preprocess the o_2 and g_2 since this is only used for stats
+
+            self.o_stats.update(transitions['o'])
+            self.g_stats.update(transitions['g'])
+
+            self.o_stats.recompute_stats()
+            self.g_stats.recompute_stats()
+
+
 
 
     def train(self, stage=True):

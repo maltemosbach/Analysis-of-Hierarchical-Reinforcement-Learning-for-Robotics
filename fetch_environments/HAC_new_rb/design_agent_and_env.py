@@ -48,7 +48,7 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
     agent_params["episodes_to_store"] = 100000
 
     # Provide training schedule for agent.  Training by default will alternate between exploration and testing.  Hyperparameter below indicates number of exploration episodes.  Testing occurs for 100 episodes.  To change number of testing episodes, go to "ran_HAC.py".
-    agent_params["num_exploration_episodes"] = 1
+    agent_params["num_exploration_episodes"] = 10
 
 
 

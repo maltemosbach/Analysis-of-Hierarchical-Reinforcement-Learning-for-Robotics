@@ -1,3 +1,4 @@
+
 import numpy as np
 from experience_buffer import ExperienceBuffer
 from replay_buffer import ReplayBuffer
@@ -91,7 +92,7 @@ class Layer():
         # Buffer size = transitions per attempt * attempts per episode * num of episodes stored
         self.buffer_size = min(self.trans_per_attempt * self.time_limit**(self.hparams["layers"]-1 - self.layer_number) * self.episodes_to_store, self.buffer_size_ceiling)
 
-        self.batch_size = 2
+        self.batch_size = 256
         self.exp_buffer = ExperienceBuffer(self.buffer_size, self.batch_size)
 
         # Configure the replay buffer.
@@ -119,8 +120,8 @@ class Layer():
         self.replay_buffer.clear_buffer()
 
 
-        buffer_size_in_transitions = 10
-        mal_buffer_shapes = {'o': self.dimo, 'g': self.dimg, 'u': self.dimu, 'r': 1, 'o_2': self.dimo, 'is_t': 1}
+        buffer_size_in_transitions = 1000000
+        mal_buffer_shapes = {'o': self.dimo, 'g': self.dimg, 'u': self.dimu, 'r': 1, 'o_2': self.dimo}
         self.mal_buffer = MaltesBuffer(mal_buffer_shapes, buffer_size_in_transitions, hparams["replay_k"], reward_fun)
 
 
@@ -167,7 +168,7 @@ class Layer():
 
 
         if hparams["modules"][self.layer_number] == "ddpg":
-            self.policy = DDPG(self.sess, env, hparams, self.batch_size, self.exp_buffer, self.replay_buffer, self.sample_transitions, self.layer_number, FLAGS, self.hidden, self.layers, self.time_limit, use_replay_buffer=hparams["use_rb"][self.layer_number], action_l2=self.action_l2)
+            self.policy = DDPG(self.sess, env, hparams, self.batch_size, self.exp_buffer, self.replay_buffer, self.mal_buffer, self.sample_transitions, self.layer_number, FLAGS, self.hidden, self.layers, self.time_limit, use_replay_buffer=hparams["use_rb"][self.layer_number], action_l2=self.action_l2)
             self.critic = None
             self.actor = None
         elif hparams["modules"][self.layer_number] == "actorcritic":
@@ -419,7 +420,7 @@ class Layer():
             return True
 
         # Trying this variation for replay buffer
-        elif max_lay_achieved is not None and max_lay_achieved >= self.layer_number and self.hparams["use_rb"][self.layer_number] and agent.FLAGS.test:
+        elif max_lay_achieved is not None and max_lay_achieved >= self.layer_number and self.hparams["use_rb"][self.layer_number]:
             return True
                 
         # Return when out of time
@@ -649,43 +650,6 @@ class Layer():
                     # print("Layer %d Out of Attempts" % self.layer_number)
 
 
-                if (attempts_made >= self.time_limit) and not agent.FLAGS.test or (agent.steps_taken>=env.max_actions and self.layer_number>0 and not agent.FLAGS.test):
-                    if (attempts_made >= self.time_limit) or (agent.steps_taken>=env.max_actions):
-                        obs.append(o.copy())
-                        achieved_goals.append(ag.copy())
-                    if self.layer_number == 0:
-                        episode = dict(o=obs,
-                               u=acts,
-                               g=goals,
-                               ag=achieved_goals)
-                    else:
-                        #print("Creating episode for layer 1:")
-                        #print("acts:", acts)
-                        #print("info_is_sgtt:", info_is_sgtt)
-                        episode = dict(o=obs,
-                               u=acts,
-                               g=goals,
-                               ag=achieved_goals,
-                               is_sgtt=info_is_sgtt)
-                        #print("episode:", episode)
-
-                    episode = convert_episode_to_batch_major(episode)
-
-                    #print("Layer", self.layer_number)
-                    #print("len(episode['o'][0]):", len(episode['o'][0]))
-                    #print("len(episode['u'][0]):", len(episode['u'][0]))
-                    #print("len(episode['g'][0]):", len(episode['g'][0]))
-                    #print("len(episode['ag'][0]):", len(episode['ag'][0]))
-                    #if self.layer_number > 0:
-                    #    print("len(episode['is_sgtt'][0]):", len(episode['is_sgtt'][0]))
-
-                    #assert len(episode['o'][0]) == self.T+1, "ERROR: Episode size [o] is {actual_size} when it should be {size}".format(actual_size=len(episode['o'][0]), size=self.T+1)
-                    #assert len(episode['u'][0]) == self.T, "ERROR: Episode size [u] wrong"
-                    #assert len(episode['g'][0]) == self.T, "ERROR: Episode size [g] wrong"
-                    #assert len(episode['ag'][0]) == self.T+1, "ERROR: Episode size [ag] wrong"
-                    #print("Storing episode for layer", self.layer_number)
-                    self.policy.store_episode(episode)
-                    self.mal_buffer.store_episode(episode)
 
 
 
@@ -703,6 +667,27 @@ class Layer():
                 # Under certain circumstances, the highest layer will not seek a new end goal
                 if self.return_to_higher_level(max_lay_achieved, agent, env, attempts_made):
                     #print("returning to highler level!!!")
+                    if not agent.FLAGS.test:
+                        obs.append(o.copy())
+                        achieved_goals.append(ag.copy())
+                        if self.layer_number == 0:
+                            episode = dict(o=obs,
+                                   u=acts,
+                                   g=goals,
+                                   ag=achieved_goals)
+                        else:
+                            #print("Creating episode for layer 1:")
+                            #print("acts:", acts)
+                            #print("info_is_sgtt:", info_is_sgtt)
+                            episode = dict(o=obs,
+                                   u=acts,
+                                   g=goals,
+                                   ag=achieved_goals,
+                                   is_sgtt=info_is_sgtt)
+                        episode = convert_episode_to_batch_major(episode)
+
+                        self.policy.store_episode_mal(episode)
+
                     return goal_status, max_lay_achieved
 
 

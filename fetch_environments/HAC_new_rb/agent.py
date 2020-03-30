@@ -49,7 +49,7 @@ class Agent():
         self.steps_taken = 0
 
         # Below hyperparameter specifies number of Q-value updates made after each episode
-        self.num_updates = 1
+        self.num_updates = 40
 
         # Below parameters will be used to store performance results
         self.performance_log = []
@@ -200,6 +200,7 @@ class Agent():
                 self.writer.add_scalar('layer_0_critic_loss (ddpg)', self.layers[0].policy.critic_loss, step)
                 if self.hparams["use_rb"][0]:
                     self.writer.add_scalar('layer 0 replay_buffer size', self.layers[0].replay_buffer.get_current_size(), step)
+                    self.writer.add_scalar('layer 0 mal_buffer size', self.layers[0].mal_buffer.get_current_size(), step)
                 else:
                     self.writer.add_scalar('layer 0 experience_buffer size', self.layers[0].exp_buffer.size, step)
 
