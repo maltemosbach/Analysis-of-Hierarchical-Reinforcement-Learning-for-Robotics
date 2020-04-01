@@ -21,7 +21,7 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
     if hparams["env"] == "FetchReach-v1":
         project_state_to_end_goal = lambda sim, state: state[0:3]
         project_state_to_subgoal = lambda sim, state: np.array([1.55 if state[0] > 1.55 else 1.05 if state[0] < 1.05 else state[0], 1.1 if state[1] > 1.1 else 0.4 if state[1] < 0.4 else state[1], 1.1 if state[2] > 1.1 else 0.4 if state[2] < 0.4 else state[2]])
-    elif hparams["env"] == "FetchPush-v1" or hparams["env"] == "FetchPickAndPlace-v1":
+    elif hparams["env"] == "FetchPush-v1" or hparams["env"] == "FetchPush_obstacle-v1" or hparams["env"] == "FetchPickAndPlace-v1":
         project_state_to_end_goal = lambda sim, state: state[3:6]
         project_state_to_subgoal = lambda sim, state: np.array([1.55 if state[3] > 1.55 else 1.05 if state[3] < 1.05 else state[3], 1.1 if state[4] > 1.1 else 0.4 if state[4] < 0.4 else state[4], 1.1 if state[5] > 1.1 else 0.4 if state[5] < 0.4 else state[5]])
     else:
@@ -41,11 +41,6 @@ def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
 
     # Define subgoal penalty for missing subgoal.  Please note that by default the Q value target for missed subgoals does not include Q-value of next state (i.e, discount rate = 0).  As a result, the Q-value target for missed subgoal just equals penalty.  For instance in this 3-level UR5 implementation, if a level proposes a subgoal and misses it, the Q target value for this action would be -10.  To incorporate the next state in the penalty, go to the "penalize_subgoal" method in the "layer.py" file.
     agent_params["subgoal_penalty"] = -FLAGS.time_scale
-
-    # Define number of episodes of transitions to be stored by each level of the hierarchy
-    # To store up to 1.000.000 transitions this should be >= 20.000
-    #agent_params["episodes_to_store"] = 20000
-    agent_params["episodes_to_store"] = 100000
 
     # Provide training schedule for agent.  Training by default will alternate between exploration and testing.  Hyperparameter below indicates number of exploration episodes.  Testing occurs for 100 episodes.  To change number of testing episodes, go to "ran_HAC.py".
     agent_params["num_exploration_episodes"] = 10

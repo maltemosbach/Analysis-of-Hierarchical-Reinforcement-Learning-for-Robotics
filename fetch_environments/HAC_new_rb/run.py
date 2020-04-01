@@ -48,7 +48,7 @@ Parameters for the runs
     FLAGS.time_scale (int): Max sequence length in which each policy will specialize
     FLAGS>max_actions (int): Max number of atomic actions
 """
-NUM_RUNS = 2
+NUM_RUNS = 5
 NUM_BATCH = 21
 
 FLAGS.time_scale = 50

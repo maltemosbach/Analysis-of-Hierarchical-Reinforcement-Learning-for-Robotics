@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 class ExperienceBuffer():
 
@@ -11,6 +12,18 @@ class ExperienceBuffer():
     def add(self, experience):
         assert len(experience) == 7, 'Experience must be of form (s, a, r, s, g, t, grip_info\')'
         assert type(experience[5]) == bool
+
+        #print("Adding transition to experience_buffer (s, a, r, s, g, t, grip_info):", experience)
+        #transitions = {}
+        #transitions['o'] = experience[0]
+        #transitions['u'] = experience[1]
+        #transitions['r'] = experience[2]
+        #transitions['o_2'] = experience[3]
+        #transitions['g'] = experience[4]
+        #transitions['is_t'] = experience[5]
+
+        #print("Experience buffer transitions:", transitions)
+
 
         self.experiences.append(experience)
         self.size += 1

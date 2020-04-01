@@ -3,14 +3,14 @@ import time
 
 
 class TransitionsBuffer:
-    def __init__(self, buffer_shapes, size_in_transitions, replay_k, reward_fun, sampling_strategy="future"):
+    def __init__(self, buffer_shapes, size_in_transitions, replay_k, reward_fun, sampling_strategy="HAC"):
         """Creates my new type 'transitions buffer'
         Args:
             buffer_shapes (dict of ints): the shape of all arguments of the buffer
             size_in_transitions (int): the size of the buffer, measured in transitions
             replay_k (int): number of HER transitions for every regular transition
             reward_fun (function): reward function
-            sampling_strategy (str): HER sampling strategy (only future right now)
+            sampling_strategy (str): HER sampling strategy (future, final or next)
         """
         self.buffer_shapes = buffer_shapes
         self.size_in_transitions = size_in_transitions
@@ -57,6 +57,7 @@ class TransitionsBuffer:
         episode_batch_save['ag'] = episode_batch['ag']
         episode_batch['ag'] = episode_batch['ag'][:-1, :]
 
+
         for key in episode_batch.keys():
             #print("episode_batch[{k}].shape[0]=".format(k=key), episode_batch[key].shape[0])
             assert episode_batch[key].shape[0] == T
@@ -64,31 +65,108 @@ class TransitionsBuffer:
         # raw episode batch finished with o, ag, g, u, o_2, ag_2
         # would get passed to her_sampler now
 
-        
-        # Calculate number of total transitions to store
-        total_num_new_trans = (1+self.replay_k) * T
+        if self.sampling_strategy == 'future':
+            # Calculate number of total transitions to store
+            total_num_new_trans = (1+self.replay_k) * T
 
-        # Generate transitions by repeating episode batch to generate regular and HER transitions
-        transitions = {key: np.repeat(episode_batch[key], 1 + self.replay_k, axis=0) for key in episode_batch.keys()}
+            # Generate transitions by repeating episode batch to generate regular and HER transitions
+            transitions = {key: np.repeat(episode_batch[key], 1 + self.replay_k, axis=0) for key in episode_batch.keys()}
 
-        indexes = np.arange((1 + self.replay_k) * T)
+            indexes = np.arange((1 + self.replay_k) * T)
 
-        # timestep of each transition inside the episode
-        timesteps = np.repeat(np.arange(T), 1 + self.replay_k)
+            # timestep of each transition inside the episode
+            timesteps = np.repeat(np.arange(T), 1 + self.replay_k)
 
-        # indexes for which HER transitions will be formed
-        her_indexes = np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0)
+            # indexes for which HER transitions will be formed
+            her_indexes = np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0)
 
-        # offset in timesteps for 'future' sampling strategy
-        future_offset = np.random.uniform(size=total_num_new_trans) * (T - timesteps)
-        future_offset = future_offset.astype(int)
+            # offset in timesteps for 'future' sampling strategy
+            future_offset = np.random.uniform(size=total_num_new_trans) * (T - timesteps)
+            future_offset = future_offset.astype(int)
 
-        # timesteps from which future achieved goals will be sampled
-        future_t = (timesteps + 1 + future_offset)[her_indexes]
+            # timesteps from which future achieved goals will be sampled
+            future_t = (timesteps + 1 + future_offset)[her_indexes]
+
+
+        elif self.sampling_strategy == 'final':
+            self.replay_k = 1
+            # Calculate number of total transitions to store
+            total_num_new_trans = (1+self.replay_k) * T
+
+            # Generate transitions by repeating episode batch to generate regular and HER transitions
+            transitions = {key: np.repeat(episode_batch[key], 1 + self.replay_k, axis=0) for key in episode_batch.keys()}
+
+            indexes = np.arange((1 + self.replay_k) * T)
+
+            # timestep of each transition inside the episode
+            timesteps = np.repeat(np.arange(T), 1 + self.replay_k)
+
+            # indexes for which HER transitions will be formed
+            her_indexes = np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0)
+
+
+            # timesteps from which future achieved goals will be sampled
+            future_t = (T * np.ones(total_num_new_trans)[her_indexes]).astype(int)
+
+
+        elif self.sampling_strategy == 'next':
+            #print('In next sampling strategy!')
+            self.replay_k = 1
+            # Calculate number of total transitions to store
+            total_num_new_trans = (1+self.replay_k) * T
+
+            # Generate transitions by repeating episode batch to generate regular and HER transitions
+            transitions = {key: np.repeat(episode_batch[key], 1 + self.replay_k, axis=0) for key in episode_batch.keys()}
+
+            indexes = np.arange((1 + self.replay_k) * T)
+            #print("indexes:", indexes)
+
+            # timestep of each transition inside the episode
+            timesteps = np.repeat(np.arange(T), 1 + self.replay_k)
+            #print("timesteps:", timesteps)
+
+            # indexes for which HER transitions will be formed
+            her_indexes = np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0)
+            #print("her_indexes:", her_indexes)
+
+
+            # timesteps from which future achieved goals will be sampled
+            future_t = (timesteps + np.ones(total_num_new_trans))[her_indexes].astype(int)
+            #print("future_t:", future_t)
+
+        elif self.sampling_strategy == 'HAC':
+            # Calculate number of total transitions to store
+            total_num_new_trans = (1+self.replay_k) * T
+
+            # Generate transitions by repeating episode batch to generate regular and HER transitions
+            transitions = {key: np.repeat(episode_batch[key], 1 + self.replay_k, axis=0) for key in episode_batch.keys()}
+
+            indexes = np.arange((1 + self.replay_k) * T)
+
+            # timestep of each transition inside the episode
+            timesteps = np.repeat(np.arange(T), 1 + self.replay_k)
+            #print("timesteps:", timesteps)
+
+            # indexes for which HER transitions will be formed
+            her_indexes = np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0)
+
+            indices = np.zeros((self.replay_k))
+            indices[:self.replay_k-1] = np.random.randint(T,size=self.replay_k-1)
+            indices[self.replay_k-1] = T - 1
+            indices = np.sort(indices)
+
+            #print("indices (transitions_buffer):")
+            future_t = np.tile(indices, T).astype(int)
+            future_t = (future_t + np.ones(future_t.shape)).astype(int)   # because i am using episode_batch_save[ag] right now
+            #print("future_t:", future_t)
+
+
+
 
         # future achieved goals from the same episode
         future_ag = episode_batch_save['ag'][future_t]
-
+        #print("episode_batch_save['ag']:", episode_batch_save['ag'])
+        #print("future_ag:", future_ag)
 
         # Substituting goal with a future achieved state from the same episode for all her transitions
         transitions['g'][her_indexes] = future_ag
@@ -106,11 +184,12 @@ class TransitionsBuffer:
         transitions['r'] = transitions['r'].reshape(total_num_new_trans, 1)
         transitions['is_t'] = transitions['is_t'].reshape(total_num_new_trans, 1)
 
-
         # Get indexes where to store transitions
         idxs = self._get_storage_idx(total_num_new_trans)
         #print("idxs:", idxs)
 
+
+        #print("adding transitions to transition_buffer:", transitions)
 
         # load inputs into buffers
         for key in self.finished_transitions.keys():
@@ -139,6 +218,7 @@ class TransitionsBuffer:
     def sample(self, batch_size):
         """Returns a dict {key: array(batch_size x shapes[key])}
         """
+        #print("sample is called!")
 
         assert self.current_size > 0
 

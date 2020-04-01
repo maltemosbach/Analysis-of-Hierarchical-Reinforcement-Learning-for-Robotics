@@ -70,6 +70,12 @@ class DDPG():
         self.T = T
         self.buffer_type = buffer_type
 
+        # For logging normalizers:
+        self.o_stats_mean = 0
+        self.o_stats_std = 0
+        self.g_stats_mean = 0
+        self.g_stats_std = 0
+
         
         # Exposed for tensorboard logging
         self.critic_loss = 0
@@ -236,6 +242,12 @@ class DDPG():
                 self.o_stats.recompute_stats()
                 self.g_stats.recompute_stats()
 
+                self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
+                self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
+                self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
+                self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
+
+
             transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
 
         else:
@@ -260,13 +272,26 @@ class DDPG():
 
 
     # Sample batch from my new transitions buffer
-    def sample_batch_transitions_buffer(self):
+    def sample_batch_transitions_buffer(self, update_stats=True):
 
         transitions = self.transitions_buffer.sample(self.batch_size)
 
         o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
         transitions['o'], transitions['g'] = self._preprocess_og(o, g)
         transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
+
+
+        if update_stats:
+                self.o_stats.update(transitions['o'])
+                self.g_stats.update(transitions['g'])
+
+                self.o_stats.recompute_stats()
+                self.g_stats.recompute_stats()
+
+                self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
+                self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
+                self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
+                self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
 
         transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
 
@@ -314,7 +339,7 @@ class DDPG():
             self.g_stats.recompute_stats()
 
 
-    def store_episode_transitions_buffer(self, episode_batch, update_stats=True):
+    def store_episode_transitions_buffer(self, episode_batch, update_stats=False):
         """
         episode_batch: array of batch_size x (T or T+1) x dim_key
                        'o' is of size T+1, others are of size T

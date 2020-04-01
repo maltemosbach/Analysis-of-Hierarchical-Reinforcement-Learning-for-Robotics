@@ -74,11 +74,8 @@ class Layer():
         self.count_ind = 0
 
         # Ceiling on buffer size
-        #self.buffer_size_ceiling = 10**6
         self.buffer_size_ceiling = 10**6
 
-        # Number of full episodes stored in replay buffer
-        self.episodes_to_store = agent_params["episodes_to_store"]
 
         # Set number of transitions to serve as replay goals during goal replay
         self.num_replay_goals = hparams["replay_k"]
@@ -89,8 +86,8 @@ class Layer():
         else:
             self.trans_per_attempt = (1 + self.num_replay_goals) * self.time_limit + int(self.time_limit/3)
 
-        # Buffer size = transitions per attempt * attempts per episode * num of episodes stored
-        self.buffer_size = min(self.trans_per_attempt * self.time_limit**(self.hparams["layers"]-1 - self.layer_number) * self.episodes_to_store, self.buffer_size_ceiling)
+
+        self.buffer_size = self.buffer_size_ceiling
 
         self.batch_size = 256
         self.exp_buffer = ExperienceBuffer(self.buffer_size, self.batch_size)
@@ -376,6 +373,9 @@ class Layer():
         self.temp_goal_replay_storage = []
 
 
+
+
+
     # Create transition penalizing subgoal if necessary.  The target Q-value when this transition is used will ignore next state as the finished boolena = True.  Change the finished boolean to False, if you would like the subgoal penalty to depend on the next state.
     def penalize_subgoal(self, subgoal, next_state, high_level_goal_achieved):
 
@@ -447,7 +447,7 @@ class Layer():
     # Learn to achieve goals with actions belonging to appropriate time scale.  "goal_array" contains the goal states for the current layer and all higher layers
     def train(self, agent, env, subgoal_test = False, episode_num = None):
 
-        print("\nTraining Layer %d" % self.layer_number)
+        #print("\nTraining Layer %d" % self.layer_number)
 
         # Set layer's current state and new goal state
         self.goal = agent.goal_array[self.layer_number]

@@ -198,6 +198,13 @@ class Agent():
             if self.hparams["modules"][0] == "ddpg":
                 self.writer.add_histogram('layer_0_actor_loss_ddpg', self.layers[0].policy.actor_loss, step)
                 self.writer.add_scalar('layer_0_critic_loss_ddpg', self.layers[0].policy.critic_loss, step)
+
+                self.writer.add_scalar('layer_0_stats_o/mean', self.layers[0].policy.o_stats_mean, step)
+                self.writer.add_scalar('layer_0_stats_o/std', self.layers[0].policy.o_stats_std, step)
+                self.writer.add_scalar('layer_0_stats_g/mean', self.layers[0].policy.g_stats_mean, step)
+                self.writer.add_scalar('layer_0_stats_g/std', self.layers[0].policy.g_stats_std, step)
+
+
                 if self.hparams["buffer"][0] == "replay":
                     self.writer.add_scalar('layer 0 replay_buffer size', self.layers[0].replay_buffer.get_current_size(), step)
                 elif self.hparams["buffer"][0] == "transitions":  
