@@ -4,9 +4,12 @@ This repository contains the code for the Master thesis implementation of the HA
 
 ## Update Log
 
-### Currently - Extend plotting tool & enable 'future'-sampling strategy
-- Reward plots
-- Critic loss value plots
+### Currently - Finish plotting tool and create transfer learning testcase
+- Success_rate plots are too noisy
+- Building variations of the original gym envs
+
+### 4/2/2020 - Introduce own "transitions_buffer"
+Since the experience_buffer and the baselines replay_buffer were not quite sufficient for testing sampling strategies as I had intended, I introduced my own transitions_buffer.
 
 ### 3/25/2020 - Create_plots tool
 Arrays for success rate and a Q-value table is saved form the runs and loaded by create_plots.py to create the success rate figures as well as figures used to visualize the learning of the critic.
