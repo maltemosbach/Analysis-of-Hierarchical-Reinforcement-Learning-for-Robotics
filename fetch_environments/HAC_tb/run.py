@@ -32,10 +32,10 @@ hyperparameters = {
         "ac_n"         : [0.2],
         "sg_n"         : [0.1],
         "replay_k"     : [4],
-        "layers"       : [2],
+        "layers"       : [1, 2],
         "use_target"   : [[False, False]],
         "sg_test_perc" : [0.1],
-        "buffer"       : [['experience', 'experience'], ['transitions', 'transitions']],
+        "buffer"       : [['experience', 'experience']],
         "modules"      : [['ddpg', 'actorcritic']],
 
     }
@@ -48,10 +48,10 @@ Parameters for the runs
     FLAGS.time_scale (int): Max sequence length in which each policy will specialize
     FLAGS>max_actions (int): Max number of atomic actions
 """
-NUM_RUNS = 5
-NUM_BATCH = 33
+NUM_RUNS = 2
+NUM_BATCH = 601
 
-FLAGS.time_scale = 5
+FLAGS.time_scale = 10
 FLAGS.max_actions = 50
 
 

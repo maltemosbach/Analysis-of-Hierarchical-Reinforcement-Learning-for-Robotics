@@ -651,52 +651,73 @@ class Layer():
                 for _ in range(num_updates):
                     self.policy.train()
 
-
                 # Update all target nets
                 self.policy.update_target_net()
 
         elif self.hparams["modules"][self.layer_number] == "actorcritic":
             print("learning layer {layer_number} ({module}) with {buffer} buffer".format(layer_number=self.layer_number, module=self.hparams["modules"][self.layer_number], buffer=self.hparams["buffer"][self.layer_number]))
             if self.hparams["buffer"][self.layer_number] == "experience":
-                for _ in range(num_updates):
-                    # Update weights of non-target networks
-                    if self.experience_buffer.size >= self.batch_size:
-                        old_states, actions, rewards, new_states, goals, is_terminals = self.experience_buffer.get_batch()
-
-                        next_batch_size = min(self.experience_buffer.size, self.experience_buffer.batch_size)
-
-
-                        self.critic.update(old_states, actions, rewards, new_states, goals, self.actor.get_target_action(new_states,goals), is_terminals)
-                        action_derivs = self.critic.get_gradients(old_states, goals, self.actor.get_action(old_states, goals))
-                        self.actor.update(old_states, goals, action_derivs)
-
                 if self.hparams["use_target"][self.layer_number]:
+                    for _ in range(num_updates):
+                        # Update weights of non-target networks
+                        if self.experience_buffer.size > 250:
+                            old_states, actions, rewards, new_states, goals, is_terminals = self.experience_buffer.get_batch()
+
+                            self.critic.update(old_states, actions, rewards, new_states, goals, self.actor.get_target_action(new_states,goals), is_terminals)
+                            action_derivs = self.critic.get_gradients(old_states, goals, self.actor.get_action(old_states, goals))
+                            self.actor.update(old_states, goals, action_derivs)
                     # Update weights of target networks
                     self.sess.run(self.critic.update_target_weights)
                     self.sess.run(self.actor.update_target_weights)
+
+                else:
+                    for _ in range(num_updates):
+                        # Update weights of non-target networks
+                        if self.experience_buffer.size > 250:
+                            old_states, actions, rewards, new_states, goals, is_terminals = self.experience_buffer.get_batch()
+
+                            self.critic.update(old_states, actions, rewards, new_states, goals, self.actor.get_action(new_states,goals), is_terminals)
+                            action_derivs = self.critic.get_gradients(old_states, goals, self.actor.get_action(old_states, goals))
+                            self.actor.update(old_states, goals, action_derivs)
+
 
             elif self.hparams["buffer"][self.layer_number] == "transitions":
-                for _ in range(num_updates):
-                    # Update weights of non-target networks
-                    transitions = self.transitions_buffer.sample(self.batch_size)
-                    old_states = transitions['o']
-                    actions = transitions['u']
-                    rewards = transitions['r']
-                    new_states = transitions['o_2']
-                    goals = transitions['g']
-                    is_terminals = transitions['is_t']
-
-                    next_batch_size = self.batch_size
-
-
-                    self.critic.update(old_states, actions, rewards, new_states, goals, self.actor.get_target_action(new_states,goals), is_terminals)
-                    action_derivs = self.critic.get_gradients(old_states, goals, self.actor.get_action(old_states, goals))
-                    self.actor.update(old_states, goals, action_derivs)
-
                 if self.hparams["use_target"][self.layer_number]:
+                    for _ in range(num_updates):
+                        # Update weights of non-target networks
+                        if self.transitions_buffer.get_current_size() > 250:
+                            transitions = self.transitions_buffer.sample(self.batch_size)
+                            old_states = transitions['o']
+                            actions = transitions['u']
+                            rewards = transitions['r']
+                            new_states = transitions['o_2']
+                            goals = transitions['g']
+                            is_terminals = transitions['is_t']
+
+
+                            self.critic.update(old_states, actions, rewards, new_states, goals, self.actor.get_target_action(new_states,goals), is_terminals)
+                            action_derivs = self.critic.get_gradients(old_states, goals, self.actor.get_action(old_states, goals))
+                            self.actor.update(old_states, goals, action_derivs)
                     # Update weights of target networks
                     self.sess.run(self.critic.update_target_weights)
                     self.sess.run(self.actor.update_target_weights)
+
+                else:
+                    for _ in range(num_updates):
+                        # Update weights of non-target networks
+                        if self.transitions_buffer.get_current_size() > 250:
+                            transitions = self.transitions_buffer.sample(self.batch_size)
+                            old_states = transitions['o']
+                            actions = transitions['u']
+                            rewards = transitions['r']
+                            new_states = transitions['o_2']
+                            goals = transitions['g']
+                            is_terminals = transitions['is_t']
+
+
+                            self.critic.update(old_states, actions, rewards, new_states, goals, self.actor.get_action(new_states,goals), is_terminals)
+                            action_derivs = self.critic.get_gradients(old_states, goals, self.actor.get_action(old_states, goals))
+                            self.actor.update(old_states, goals, action_derivs)
 
             else:
                 assert False
