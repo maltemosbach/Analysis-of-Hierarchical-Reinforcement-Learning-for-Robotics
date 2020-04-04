@@ -119,7 +119,7 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
 
 
             # - - - - Q-vals for FetchPush and FetchPickAndPlace - - - - 
-            elif env.name == "FetchPush-v1" or env.name == "FetchPickAndPlace-v1":
+            elif env.name == "FetchPush-v1" or env.name == "FetchPush_obstacle-v1" or env.name == "FetchPush_obstacle-v2" or env.name == "FetchPickAndPlace-v1":
                 g = np.array([1.15, 0.6, 0.5])
                 o = np.zeros([10, 14, 25])
 
