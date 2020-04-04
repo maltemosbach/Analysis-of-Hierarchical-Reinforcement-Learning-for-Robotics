@@ -28,7 +28,7 @@ The key hyperparameters are:
     modules (array of strs): Modules each layer should use (ddpg, actorcritic right now)
 """
 hyperparameters = {
-        "env"          : ['FetchReach-v1'],
+        "env"          : ['FetchPickAndPlace_obstacle-v1'],
         "ac_n"         : [0.2],
         "sg_n"         : [0.1],
         "replay_k"     : [4],
