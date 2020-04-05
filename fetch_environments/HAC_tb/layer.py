@@ -97,7 +97,7 @@ class Layer():
             return env.gymEnv.compute_reward(achieved_goal=ag_2, desired_goal=g, info=0)
 
         transitions_buffer_shapes = {'o': self.dimo, 'g': self.dimg, 'u': self.dimu, 'r': 1, 'o_2': self.dimo}
-        self.transitions_buffer = TransitionsBuffer(transitions_buffer_shapes, self.buffer_size, hparams["replay_k"], reward_fun)
+        self.transitions_buffer = TransitionsBuffer(transitions_buffer_shapes, self.buffer_size, hparams["replay_k"], reward_fun, sampling_strategy=hparams["samp_str"])
 
 
 

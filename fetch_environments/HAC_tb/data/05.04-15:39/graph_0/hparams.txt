@@ -1,0 +1,1 @@
+{'samp_str': 'HAC', 'layers': 2, 'modules': ['ddpg', 'actorcritic'], 'sg_n': 0.1, 'replay_k': 4, 'ac_n': 0.2, 'env': 'FetchReach-v1', 'use_target': [False, False], 'buffer': ['transitions', 'transitions'], 'sg_test_perc': 0.1}

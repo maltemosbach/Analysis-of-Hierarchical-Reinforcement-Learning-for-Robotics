@@ -112,10 +112,6 @@ for j in range(len(date_paths)):
     #                 Creating Q_val_figure                  #
     #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #
 
-    #steps to take the Q-Vals from for the left and right map in the figure
-    step1 = 0
-    step2 = 1
-
     # If Q-values are available
     if len(current_Q_val_list) > 0:
         # Loading Q-values from the first run
@@ -123,9 +119,8 @@ for j in range(len(date_paths)):
         # first_Q_val_array (step, layer (0,1), x-dim (10), y-dim (14))
 
         print("first_Q_val_array.shape:", first_Q_val_array.shape)
-        time.sleep(100)
-
-
+        num = np.ceil(np.sqrt(first_Q_val_array.shape[0])).astype(int)
+        print("num:", num)
 
         # Q-values are plotted for a plane of the state space (orthogonal to z-axis)
 
@@ -151,26 +146,24 @@ for j in range(len(date_paths)):
         '''
 
         # Layer 0
-        if not np.array_equal(first_Q_val_array[step1, 0, :, :], np.ones((10,14))) and not not np.array_equal(first_Q_val_array[step2, 0, :, :], np.ones((10,14))):
+        if not np.array_equal(first_Q_val_array[0, 0, :, :], np.ones((20,28))):
             # Q_vals for the choosen steps have actually be written
 
             methods = ['gaussian']
 
-            fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(9, 6),
+            fig, axs = plt.subplots(nrows=num, ncols=num, figsize=(30, 30),
                                     subplot_kw={'xticks': [], 'yticks': []})
 
-            im = axs.flat[0].imshow(first_Q_val_array[step1, 0, :, :], interpolation="gaussian", cmap='viridis', vmin=-20, vmax=0)
-
-            axs.flat[1].imshow(first_Q_val_array[step2, 0, :, :], interpolation="gaussian", cmap='viridis', vmin=-20, vmax=0)
+            for l in range(first_Q_val_array.shape[0]):
+                im = axs.flat[l].imshow(first_Q_val_array[l, 0, :, :], interpolation="gaussian", cmap='viridis', vmin=-5, vmax=0)
 
             # Create colorbars
-            cbar0 = axs.flat[0].figure.colorbar(im, ax=axs.flat[0], orientation="horizontal", boundaries=np.linspace(-20.0, 0.0, num=201), ticks=[-20, -15, -10, -5, 0])
-            cbar0.ax.set_xlabel("Q-values", rotation=0, va="top")
-            cbar1 = axs.flat[1].figure.colorbar(im, ax=axs.flat[1], orientation="horizontal", boundaries=np.linspace(-20.0, 0.0, num=201), ticks=[-20, -15, -10, -5, 0])
-            cbar1.ax.set_xlabel("Q-values", rotation=0, va="top")
+            for l in range(first_Q_val_array.shape[0]):
+                cbar = axs.flat[l].figure.colorbar(im, ax=axs.flat[l], orientation="horizontal", boundaries=np.linspace(-5.0, 0.0, num=201), ticks=[-5, 0])
+                cbar.ax.set_xlabel("Q-values", rotation=0, va="top")
 
             #plt.tight_layout()
-            fig.set_size_inches(8, 4)
+            fig.set_size_inches(30, 30)
             fig.tight_layout()
             Path("./figures").mkdir(parents=True, exist_ok=True)
 
@@ -178,41 +171,30 @@ for j in range(len(date_paths)):
                 orientation='landscape',transparent=False, bbox_inches='tight')
             #plt.show()
 
-            # Layer 0
-        if not np.array_equal(first_Q_val_array[1, 1, :, :], np.ones((10,14))):
-            # Q_vals for layer 1 step 1 exist
-
-            # Use equal range for both figures
-            max_Q = np.amax(first_Q_val_array[1, 1, :, :])
-            min_Q = np.amin(first_Q_val_array[1, 1, :, :])
-            Q_range = max_Q - min_Q
-
-            mean_Q = np.mean(first_Q_val_array[0, 1, :, :])
+        # Layer 1
+        if not np.array_equal(first_Q_val_array[0, 1, :, :], np.ones((20,28))):
+            # Q_vals for the choosen steps have actually be written
 
             methods = ['gaussian']
 
-            fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(9, 6),
+            fig, axs = plt.subplots(nrows=num, ncols=num, figsize=(30, 30),
                                     subplot_kw={'xticks': [], 'yticks': []})
 
-            axs.flat[0].imshow(first_Q_val_array[0, 1, :, :], interpolation="gaussian", cmap='viridis', vmin=mean_Q-(Q_range/2), vmax=mean_Q+(Q_range/2))
-
-            axs.flat[1].imshow(first_Q_val_array[1, 1, :, :], interpolation="gaussian", cmap='viridis', vmin=min_Q, vmax=max_Q)
+            for l in range(first_Q_val_array.shape[0]):
+                im = axs.flat[l].imshow(first_Q_val_array[l, 1, :, :], interpolation="gaussian", cmap='viridis', vmin=-5, vmax=0)
 
             # Create colorbars
-            cbar0 = axs.flat[0].figure.colorbar(im, ax=axs.flat[0], orientation="horizontal", boundaries=np.linspace(-20.0, 0.0, num=201), ticks=[-20, -15, -10, -5, 0])
-            cbar0.ax.set_xlabel("Q-values", rotation=0, va="top")
-            cbar1 = axs.flat[1].figure.colorbar(im, ax=axs.flat[1], orientation="horizontal", boundaries=np.linspace(-20.0, 0.0, num=201), ticks=[-20, -15, -10, -5, 0])
-            cbar1.ax.set_xlabel("Q-values", rotation=0, va="top")
+            for l in range(first_Q_val_array.shape[0]):
+                cbar = axs.flat[l].figure.colorbar(im, ax=axs.flat[l], orientation="horizontal", boundaries=np.linspace(-5.0, 0.0, num=201), ticks=[-5, 0])
+                cbar.ax.set_xlabel("Q-values", rotation=0, va="top")
 
-
-            
-            fig.set_size_inches(8, 4)
+            #plt.tight_layout()
+            fig.set_size_inches(30, 30)
             fig.tight_layout()
             Path("./figures").mkdir(parents=True, exist_ok=True)
 
             plt.savefig("./figures/" + dates[j] + "_Q_vals_layer_1.jpg", dpi=400, facecolor='w', edgecolor='w',
                 orientation='landscape',transparent=False, bbox_inches='tight')
-            #plt.show()
 
 
     #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #

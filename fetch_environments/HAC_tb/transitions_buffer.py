@@ -110,7 +110,6 @@ class TransitionsBuffer:
 
 
         elif self.sampling_strategy == 'next':
-            #print('In next sampling strategy!')
             self.replay_k = 1
             # Calculate number of total transitions to store
             total_num_new_trans = (1+self.replay_k) * T
@@ -159,6 +158,54 @@ class TransitionsBuffer:
             future_t = np.tile(indices, T).astype(int)
             future_t = (future_t + np.ones(future_t.shape)).astype(int)   # because i am using episode_batch_save[ag] right now
             #print("future_t:", future_t)
+
+        elif self.sampling_strategy == 'future-final':
+            #print('in future-final sampling!')
+            # Calculate number of total transitions to store
+            total_num_new_trans = (1+self.replay_k) * T
+
+            # Generate transitions by repeating episode batch to generate regular and HER transitions
+            transitions = {key: np.repeat(episode_batch[key], 1 + self.replay_k, axis=0) for key in episode_batch.keys()}
+
+            indexes = np.arange((1 + self.replay_k) * T)
+
+            # timestep of each transition inside the episode
+            timesteps = np.repeat(np.arange(T), 1 + self.replay_k)
+            #print("timesteps:", timesteps)
+
+            # indexes for which HER transitions will be formed
+            her_indexes = np.where(np.arange((1 + self.replay_k) * T) % (1+ self.replay_k) != 0)
+            #print("her_indexes:", her_indexes)
+
+            indices = np.zeros((self.replay_k))
+            indices[:self.replay_k-1] = np.random.randint(T,size=self.replay_k-1)
+            indices[self.replay_k-1] = T - 1
+            indices = np.sort(indices)
+            
+            # offset in timesteps for 'future' sampling strategy
+            future_offset = np.random.uniform(size=total_num_new_trans) * (T - timesteps)
+            future_offset = future_offset.astype(int)
+            #print("future_offset:", future_offset)
+            #print("future_offset.shape:", future_offset.shape)
+            finals = future_offset[self.replay_k::1+self.replay_k]
+            #print("finals:", finals)
+            finals[:] = np.flip(np.arange(T),0)
+            #print("finals:", finals)
+            #print("future_offset:", future_offset)
+
+
+
+
+            # timesteps from which future achieved goals will be sampled
+            future_t = (timesteps + 1 + future_offset)[her_indexes]
+            
+
+
+
+            #print("future_t:", future_t)
+
+        else:
+            assert False, "Unknown sampling strategy."
 
 
 

@@ -27,7 +27,7 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
 
     Q_VAL_SAMPLING_FREQ = 5
     # Create Q_val_tables (step, layer (0,1), x-dim (10), y-dim (14))
-    Q_val_table = np.ones((np.floor(NUM_BATCH/Q_VAL_SAMPLING_FREQ).astype(int)+1, 2, 10, 14))
+    Q_val_table = np.ones((np.floor(NUM_BATCH/Q_VAL_SAMPLING_FREQ).astype(int)+1, 2, 20, 28))
     
 
     
@@ -86,8 +86,8 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
 
         # Create Q-function matrix if it is the first or last batch
         if batch % Q_VAL_SAMPLING_FREQ == 0:
-            Q_vals_layer_0 = np.ones((10, 14))
-            Q_vals_layer_1 = np.ones((10, 14))
+            Q_vals_layer_0 = np.ones((20, 28))
+            Q_vals_layer_1 = np.ones((20, 28))
 
             # - - - - Q-vals for FetchReach - - - - 
             # Goal is placed near the top left of the plane. For layer 0 the possible states in the plane are evaluated.
@@ -95,23 +95,21 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
             # are evaluated.
             if env.name == "FetchReach-v1":
                 g = np.array([1.15, 0.6, 0.5])
-                o = np.zeros([10, 14, 10])
-                Q_vals_layer_0 = np.ones((10, 14))
+                o = np.zeros([20, 28, 10])
 
-                for i in range(10):
-                    for j in range(14):
-                        o[i, j, :] = np.array([1.075 + i*0.05, 0.425 +j*0.05, 0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                for i in range(20):
+                    for j in range(28):
+                        o[i, j, :] = np.array([1.0625 + i*0.025, 0.4125 + j*0.025, 0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
                         Q_vals_layer_0[i, j] = agent.layers[0].policy.get_Q_values_pi(o[i, j, :], g, np.array([0, 0, 0, 0]), use_target_net=False)
 
                 if agent.hparams["layers"] > 1:
                     g = np.array([1.15, 0.6, 0.5])
-                    Q_vals_layer_1 = np.ones((10, 14))
                     o = np.array([1.30, 0.8, 0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-                    u = np.empty((10, 14, 3))
+                    u = np.empty((20, 28, 3))
 
-                    for i in range(10):
-                        for j in range(14):
-                            u[i, j, :] = np.array([1.075 + i*0.05, 0.425 +j*0.05, 0.5])
+                    for i in range(20):
+                        for j in range(28):
+                            u[i, j, :] = np.array([1.0625 + i*0.025, 0.4125 + j*0.025, 0.5])
                             if agent.layers[1].policy is not None:
                                 Q_vals_layer_1[i, j] = agent.layers[1].policy.get_Q_values_u(o, g, u[i, j, :], use_target_net=False)
                             elif agent.layers[1].critic is not None:
@@ -121,19 +119,19 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
             # - - - - Q-vals for FetchPush and FetchPickAndPlace - - - - 
             elif env.name == "FetchPush-v1" or env.name == "FetchPush_obstacle-v1" or env.name == "FetchPush_obstacle-v2" or env.name == "FetchPickAndPlace-v1" or env.name == "FetchPickAndPlace_obstacle-v1" or env.name == "FetchPickAndPlace_obstacle-v2":
                 g = np.array([1.15, 0.6, 0.5])
-                o = np.zeros([10, 14, 25])
+                o = np.zeros([20, 28, 25])
 
-                for i in range(10):
-                    for j in range(14):
-                        o[i, j, :] = np.array([1.5, 1.0, 0.45, 1.075 + i*0.05, 0.425 +j*0.05, 0.45,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                for i in range(20):
+                    for j in range(28):
+                        o[i, j, :] = np.array([1.5, 1.0, 0.45, 1.0625 + i*0.025, 0.4125 + j*0.025, 0.45,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
                         Q_vals_layer_0[i, j] = agent.layers[0].policy.get_Q_values_pi(o[i, j, :], g, np.array([0, 0, 0, 0]), use_target_net=False)
 
                 if agent.hparams["layers"] > 1:
                     o = np.array([1.5, 1.0, 0.45,  1.4, 0.9, 0.45, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-                    u = np.empty((10, 14, 3))        
-                    for i in range(10):
-                        for j in range(14):
-                            u[i, j, :] = np.array([1.075 + i*0.05, 0.425 +j*0.05, 0.5])
+                    u = np.empty((20, 28, 3))        
+                    for i in range(20):
+                        for j in range(28):
+                            u[i, j, :] = np.array([1.0625 + i*0.025, 0.4125 + j*0.025, 0.45])
                             if agent.layers[1].policy is not None:
                                 Q_vals_layer_1[i, j] = agent.layers[1].policy.get_Q_values_u(o, g, u[i, j, :], use_target_net=False)
                             elif agent.layers[1].critic is not None:

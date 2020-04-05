@@ -28,15 +28,16 @@ The key hyperparameters are:
     modules (array of strs): Modules each layer should use (ddpg, actorcritic right now)
 """
 hyperparameters = {
-        "env"          : ['FetchPickAndPlace_obstacle-v1'],
+        "env"          : ['FetchReach-v1'],
         "ac_n"         : [0.2],
         "sg_n"         : [0.1],
         "replay_k"     : [4],
-        "layers"       : [1, 2],
+        "layers"       : [2],
         "use_target"   : [[False, False]],
         "sg_test_perc" : [0.1],
-        "buffer"       : [['experience', 'experience']],
-        "modules"      : [['ddpg', 'actorcritic']],
+        "buffer"       : [['transitions', 'transitions']],
+        "samp_str"     : ['HAC', 'future-final'],
+        "modules"      : [['ddpg', 'actorcritic']]
 
     }
 
@@ -48,10 +49,10 @@ Parameters for the runs
     FLAGS.time_scale (int): Max sequence length in which each policy will specialize
     FLAGS>max_actions (int): Max number of atomic actions
 """
-NUM_RUNS = 2
-NUM_BATCH = 601
+NUM_RUNS = 1
+NUM_BATCH = 101
 
-FLAGS.time_scale = 10
+FLAGS.time_scale = 5
 FLAGS.max_actions = 50
 
 
