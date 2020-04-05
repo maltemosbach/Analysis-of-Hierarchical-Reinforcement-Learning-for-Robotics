@@ -1,3 +1,0 @@
-model_checkpoint_path: "/Users/maltemosbach/githubProjects/Master_thesis/fetch_environments/HAC_tb/models/HAC.ckpt-9"
-all_model_checkpoint_paths: "/Users/maltemosbach/githubProjects/Master_thesis/fetch_environments/HAC_tb/models/lowest_layer/HAC.ckpt-9"
-all_model_checkpoint_paths: "/Users/maltemosbach/githubProjects/Master_thesis/fetch_environments/HAC_tb/models/HAC.ckpt-9"
