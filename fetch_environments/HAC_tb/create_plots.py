@@ -67,7 +67,17 @@ for j in range(len(date_paths)):
         current_sr_array = np.empty((len(current_sr_list), test_graph.shape[0]))
 
         for i in range(len(current_sr_list)):
-            current_sr_array[i, :] = np.load(current_sr_list[i])
+            current_sr_array[i, :] = np.load(current_sr_list[i])     
+
+        # plot only every n-th element
+        n=2
+        current_sr_array = current_sr_array[:,::n]
+        test_graph = test_graph[::n]
+
+
+
+
+
 
         plots.append(current_sr_array)
         colors = [(0.0, 0.0, 1.0, 1.0), (0.0, 1.0, 0.0, 1.0), (1.0, 0.0, 0.0, 1.0), (0.7, 0.5, 0.85, 1.0), (0.0, 0.0, 0.0, 1.0), (0.5, 0.5, 0.5, 1.0), (0.5, 0.5, 0.0, 1.0), (0.5, 0.0, 0.5, 1.0), (0.0, 0.5, 0.5, 1.0)]
