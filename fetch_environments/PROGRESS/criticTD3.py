@@ -9,6 +9,21 @@ from baselines.her.normalizer import Normalizer
 class CriticTD3():
 
     def __init__(self, sess, env, layer_number, FLAGS, hparams, learning_rate=0.001, gamma=0.98, tau=0.05, policy_noise=0.2, noise_clip=0.5):
+        """Critic of the TD3 Actor-Critic implementation.
+        Args:
+            sess: tensorflow session
+            env: environment object containing the Gym envionment
+            batch_size (int): size of the training batches
+            layer_number (int): number of the layer this actor belongs to
+            FLAGS: flags determining how the alogirthm is run
+            hparams: hyperparameters set in run.py
+            learning_rate (float): learning rate of the actor
+            gamma (float): discount factor
+            tau (float): polyak averaging coefficient
+            policy_noise (float): noise added to policy actions
+            noise_clip (float): clipping range for added noise
+        """
+
 
         self.sess = sess
 

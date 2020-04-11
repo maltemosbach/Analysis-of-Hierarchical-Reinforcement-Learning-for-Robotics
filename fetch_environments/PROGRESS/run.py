@@ -31,14 +31,14 @@ The key hyperparameters are:
 hyperparameters = {
         "env"          : ['FetchReach-v1'],
         "ac_n"         : [0.2],
-        "sg_n"         : [0.1],
+        "sg_n"         : [0.3],
         "replay_k"     : [4],
-        "layers"       : [1, 2],
+        "layers"       : [2],
         "use_target"   : [[False, True]],
         "sg_test_perc" : [0.1],
-        "buffer"       : [['transitions', 'transitions'], ['replay', 'transitions']],
+        "buffer"       : [['transitions', 'transitions']],
         "samp_str"     : ['HAC'],
-        "modules"      : [['ddpg', 'TD3']]
+        "modules"      : [['ddpg', 'actorcritic']]
 
     }
 
@@ -51,10 +51,10 @@ Parameters for the runs
     FLAGS>max_actions (int): Max number of atomic actions
 """
 NUM_RUNS = 1
-NUM_BATCH = 101
+NUM_BATCH = 201
 
 FLAGS.time_scale = 10
-FLAGS.max_actions = 50
+FLAGS.max_actions = 100
 
 
 """ 3. ADDITIONAL OPTIONS

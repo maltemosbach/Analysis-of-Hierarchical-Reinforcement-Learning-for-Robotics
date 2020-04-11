@@ -8,16 +8,24 @@ from baselines.her.normalizer import Normalizer
 
 class ActorTD3():
 
-    def __init__(self, 
-            sess,
-            env,
-            batch_size,
-            layer_number,
-            FLAGS,
-            hparams,
-            learning_rate=0.001,
-            tau=0.05,
-            policy_freq=2):
+    def __init__(self, sess, env, batch_size, layer_number, FLAGS, hparams, learning_rate=0.001, tau=0.05, policy_freq=2):
+        """Actor for the TD3 Actor-Critic implementation.
+        Args:
+            sess: tensorflow session
+            env: environment object containing the Gym envionment
+            batch_size (int): size of the training batches
+            layer_number (int): number of the layer this actor belongs to
+            FLAGS: flags determining how the alogirthm is run
+            hparams: hyperparameters set in run.py
+            learning_rate (float): learning rate of the actor
+            tau (float): polyak averaging coefficient
+            policy_freq (int): frequency of policy updates
+        """
+
+
+
+
+
 
         self.sess = sess
 

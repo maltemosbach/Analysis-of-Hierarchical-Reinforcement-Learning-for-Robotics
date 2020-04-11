@@ -12,6 +12,17 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 def init_HAC(date, hparams, num_runs, data_dir, FLAGS, NUM_BATCH, save_models, idx_run=0):
+    """Script that initializes the runs and organizes the data for multiprocessing.
+        Args:
+            date (str): timestamp
+            hparams: hyperparameters from run.py
+            num_runs (int): number of consecutive runs this script should execute
+            data_dir (str): path to data directory
+            FLAGS: flags determining how the algorithm is run
+            NUM_BATCH (int): total number of batches to be run
+            save_models (bool): whether the trained agents should be saved
+            idx_run (int): index used to organize the data
+        """
 
     for m in range(num_runs):
 

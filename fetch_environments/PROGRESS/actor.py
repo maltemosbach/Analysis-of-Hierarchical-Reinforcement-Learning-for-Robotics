@@ -8,18 +8,20 @@ from baselines.her.normalizer import Normalizer
 
 class Actor():
 
-    def __init__(self, 
-            sess,
-            env,
-            batch_size,
-            layer_number,
-            FLAGS,
-            hparams,
-            learning_rate=0.001,
-            tau=0.05):
+    def __init__(self, sess, env, batch_size, layer_number, FLAGS, hparams, learning_rate=0.001, tau=0.05):
+        """Actor inside the HAC algorithm. Only input normalization has been added.
+        Args:
+            sess: tensorflow session
+            env: environment object containing the Gym envionment
+            batch_size (int): size of the training batches
+            layer_number (int): number of the layer this actor belongs to
+            FLAGS: flags determining how the alogirthm is run
+            hparams: hyperparameters set in run.py
+            learning_rate (float): learning rate of the actor
+            tau (float): polyak averaging coefficient
+        """
 
         self.sess = sess
-
 
         self.dimo = env.state_dim
         self.dimg = env.end_goal_dim

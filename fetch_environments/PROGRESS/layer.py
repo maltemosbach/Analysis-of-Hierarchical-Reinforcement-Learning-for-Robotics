@@ -24,7 +24,7 @@ def goal_distance(goal_a, goal_b):
 
 class Layer():
     def __init__(self, layer_number, FLAGS, env, sess, writer, agent_params, hparams):
-        """The new layer class for HAC
+        """Class representing one layer of the hierarchical agent.
         Args:
             layer_number (int): number of this layer with 0 being the lowest layer
             FLAGS: flags for configuring the running of the algorithm
@@ -113,7 +113,7 @@ class Layer():
         buffer_shapes = {'g': (self.T, self.dimg), 'u': (self.T, self.dimu), 'ag': (self.T+1, self.dimg), 'o': (self.T+1, self.dimo)}
 
 
-        self.replay_buffer = ReplayBuffer(buffer_shapes, self.buffer_size, env.max_actions, self.sample_transitions)
+        self.replay_buffer = ReplayBuffer(buffer_shapes, self.buffer_size, self.T, self.sample_transitions)
         self.replay_buffer.clear_buffer()
 
 

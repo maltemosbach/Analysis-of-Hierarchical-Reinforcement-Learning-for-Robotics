@@ -1,12 +1,16 @@
-"""
-This file provides the template for designing the agent and environment.  The below hyperparameters must be assigned to a value for the algorithm to work properly.
-"""
-
 import numpy as np
 from environment import Environment
 from agent import Agent
 
 def design_agent_and_env(FLAGS, writer, writer_graph, sess, hparams):
+    """Script that designs and creates the agent and environment.
+        Args:
+            FLAGS: flags determining how the alogirthm is run
+            writer: writer for tensorboard logging
+            writer_graph: only writes tensorflow graph to tensorboard
+            sess: tensorflow session
+            hparams: hyperparameters set in run.py
+        """
 
     Writer = writer
     Writer_graph = writer_graph

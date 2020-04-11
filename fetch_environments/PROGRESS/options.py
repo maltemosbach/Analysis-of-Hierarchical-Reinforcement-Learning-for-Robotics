@@ -43,6 +43,8 @@ Options Include:
 
 13. Only restore lowest leyer for transfer learning ("--transfer")
 
+14. Continue training and restore all weights ("--contin")
+
 """
 
 def parse_options():

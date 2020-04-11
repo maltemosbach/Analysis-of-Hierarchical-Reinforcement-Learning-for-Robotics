@@ -20,14 +20,16 @@ def dims_to_shapes(input_dims):
 
 class DDPG():
 
-    def __init__(self, sess, env, hparams, batch_size, experience_buffer, replay_buffer, transitions_buffer, layer_number, FLAGS, hidden, layers, T, buffer_type='transitions', Q_lr=0.001, pi_lr=0.001, tau=0.05, 
+    def __init__(self, sess, env, hparams, batch_size, experience_buffer, replay_buffer, transitions_buffer, 
+        layer_number, FLAGS, hidden, layers, T, buffer_type='transitions', Q_lr=0.001, pi_lr=0.001, tau=0.05, 
         gamma=0.98, action_l2=1.0, norm_eps=0.01, norm_clip=5, clip_obs=200):
+        """The new DDPG policy used inside the HAC algorithm. Code is a variation of the baselines DDPG implementation 
+        made to fit the hierarchical framework.
 
-        """The new DDPG policy used inside the HAC algorithm
         Args:
             sess: tensorflow session
             env: environment object containing the Gym envionment
-            hparams: hyperparameters from initialize HAC
+            hparams: hyperparameters set in run.py
             experience_buffer: experience buffer from original HAC implementation 
             transitions_buffer: new transitions buffer
             replay_buffer: buffer based on baselines implementation
@@ -257,7 +259,7 @@ class DDPG():
 
 
     # Sample batch from HER replay buffer using new HER_Sampler
-    def sample_batch_replay_buffer(self):
+    def sample_batch_replay_buffer(self, update_stats=True):
 
         transitions = self.replay_buffer.sample(self.batch_size)
 
@@ -266,8 +268,21 @@ class DDPG():
         transitions['o'], transitions['g'] = self._preprocess_og(o, g)
         transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
 
+        if update_stats:
+                self.o_stats.update(transitions['o'])
+                self.g_stats.update(transitions['g'])
+
+                self.o_stats.recompute_stats()
+                self.g_stats.recompute_stats()
+
+                self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
+                self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
+                self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
+                self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
+
         transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
         return transitions_batch
+
 
     # Sample batch from my new transitions buffer
     def sample_batch_transitions_buffer(self, update_stats=True):
@@ -277,7 +292,6 @@ class DDPG():
         o, o_2, g = transitions['o'], transitions['o_2'], transitions['g']
         transitions['o'], transitions['g'] = self._preprocess_og(o, g)
         transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
-
 
         if update_stats:
                 self.o_stats.update(transitions['o'])
@@ -440,6 +454,7 @@ class ActorCritic:
     def __init__(self, inputs_tf, dimo, dimg, dimu, max_u, o_stats, g_stats, hidden, layers,
                  **kwargs):
         """The actor-critic network and related training code.
+        
         Args:
             inputs_tf (dict of tensors): all necessary inputs for the network: the
                 observation (o), the goal (g), and the action (u)

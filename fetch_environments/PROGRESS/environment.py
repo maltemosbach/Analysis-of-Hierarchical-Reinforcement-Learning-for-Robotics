@@ -1,3 +1,4 @@
+
 from tkinter import *
 from tkinter import ttk
 import time
@@ -6,7 +7,12 @@ import gym
 
 class Environment():
 
-    def __init__(self, name, goal_space_test, project_state_to_end_goal, end_goal_thresholds, subgoal_bounds, project_state_to_subgoal, subgoal_thresholds, max_actions = 50, show = False):
+    def __init__(self, name, goal_space_test, project_state_to_end_goal, end_goal_thresholds, subgoal_bounds, 
+        project_state_to_subgoal, subgoal_thresholds, max_actions = 50, show = False):
+        """Environment the agent is run on containing the actual gym environment and visualization functions.
+        
+        """
+
 
         self.name = name
 
@@ -66,6 +72,7 @@ class Environment():
 
     # Execute low-level action for number of frames specified by num_frames_skip
     def execute_action(self, action):
+        action = np.zeros(4)
         self.obs, self.rewards, self.done, self.info = self.gymEnv.step(action)
         self.numTimesteps += 1
         #print("Timestep:", self.numTimesteps)
@@ -89,7 +96,7 @@ class Environment():
         # Don't show gym endgoal
         site_id = self.gymEnv.env.sim.model.site_name2id('target0')
         self.gymEnv.env.sim.model.site_pos[site_id] = end_goal - sites_offset[0]
-        self.gymEnv.env.sim.model.site_rgba[0][3] = 0.1
+        self.gymEnv.env.sim.model.site_rgba[0][3] = 0.0
 
 
     # Function returns an end goal

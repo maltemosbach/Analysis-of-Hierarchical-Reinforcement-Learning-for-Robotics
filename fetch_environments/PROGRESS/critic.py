@@ -8,6 +8,18 @@ from baselines.her.normalizer import Normalizer
 class Critic():
 
     def __init__(self, sess, env, layer_number, FLAGS, hparams, learning_rate=0.001, gamma=0.98, tau=0.05):
+        """Critic inside the HAC algorithm. Only input normalization has been added.
+        Args:
+            sess: tensorflow session
+            env: environment object containing the Gym envionment
+            batch_size (int): size of the training batches
+            layer_number (int): number of the layer this actor belongs to
+            FLAGS: flags determining how the alogirthm is run
+            hparams: hyperparameters set in run.py
+            learning_rate (float): learning rate of the actor
+            gamma (float): discount factor
+            tau (float): polyak averaging coefficient
+        """
 
         self.sess = sess
 

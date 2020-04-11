@@ -138,8 +138,6 @@ class Agent():
 
         # Continue with all layers
         if self.FLAGS.contin == True:
-            print("In continue")
-            time.sleep(10)
             self.saver.restore(self.sess, tf.train.latest_checkpoint(self.model_dir))
 
 
@@ -166,7 +164,7 @@ class Agent():
 
         # Select initial state from in initial state space, defined in environment.py
         self.current_state = env.reset_sim(self.goal_array[self.hparams["layers"] - 1])
-        #print("Initial State: ", self.current_state)
+        print("Initial State: ", self.current_state)
 
         # Select final goal from final goal space, defined in "design_agent_and_env.py"
         self.goal_array[self.hparams["layers"] - 1] = env.get_next_goal(self.FLAGS.test)

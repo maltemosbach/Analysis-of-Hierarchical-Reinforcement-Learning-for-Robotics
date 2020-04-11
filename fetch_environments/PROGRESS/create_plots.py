@@ -19,6 +19,9 @@ for x in datadir.iterdir():
     date_paths.append(x)
     dates.append(str(x)[5:])
 
+mpl.style.use('default')
+#mpl.style.use('seaborn')
+
 
 assert len(dates) > 0, "No data found"
 
@@ -103,7 +106,6 @@ for j in range(len(date_paths)):
         #print("average:", average)
 
         yerr = intq_range
-        mpl.style.use('seaborn')
 
         for k in range(len(plots)):
             y = average[k]
@@ -183,25 +185,64 @@ for j in range(len(date_paths)):
 
                 methods = ['gaussian']
 
-                fig, axs = plt.subplots(nrows=num, ncols=num, figsize=(10, 10),
-                                        subplot_kw={'xticks': [], 'yticks': []})
+                fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 5),)
 
+                mpl.style.use('default')
+                '''
                 for l in range(first_Q_val_array.shape[0]):
                     im = axs.flat[l].imshow(first_Q_val_array[l, 0, :, :], interpolation="gaussian", cmap='viridis', vmin=-10, vmax=0)
 
-                # Create colorbars
-                for l in range(first_Q_val_array.shape[0]):
-                    cbar = axs.flat[l].figure.colorbar(im, ax=axs.flat[l], orientation="horizontal", boundaries=np.linspace(-10.0, 0.0, num=201), ticks=[-10, 0])
-                    cbar.ax.set_xlabel("Q-values", rotation=0, va="top")
+                    # Create tick labels
+                    x_label_list = ['0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0', '1.1']
+                    y_label_list = ['1.05', '1.15', '1.25', '1.35', '1.45', '1.55']
+                    axs.flat[l].set_xticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5, 23.5, 27.5])
+                    axs.flat[l].set_yticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5])
+                    axs.flat[l].set_xticklabels(x_label_list)
+                    axs.flat[l].set_yticklabels(y_label_list)
 
-                #plt.tight_layout()
-                fig.set_size_inches(10, 10)
+                    # Create colorbars
+                    cbar = axs.flat[l].figure.colorbar(im, ax=axs.flat[l], orientation="horizontal", boundaries=np.linspace(-10.0, 0.0, num=201), ticks=[-10, 0])
+                    cbar.ax.set_xlabel("Q-values", rotation=0, va="bottom")
+                '''
+
+
+
+                im = axs.flat[0].imshow(first_Q_val_array[0, 0, :, :], interpolation="gaussian", cmap='viridis', vmin=-10, vmax=0)
+
+                # Create tick labels
+                x_label_list = ['0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0', '1.1']
+                y_label_list = ['1.05', '1.15', '1.25', '1.35', '1.45', '1.55']
+                axs.flat[0].set_xticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5, 23.5, 27.5])
+                axs.flat[0].set_yticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5])
+                axs.flat[0].set_xticklabels(x_label_list)
+                axs.flat[0].set_yticklabels(y_label_list)
+
+                # Create colorbars
+                cbar = axs.flat[0].figure.colorbar(im, ax=axs.flat[0], orientation="horizontal", boundaries=np.linspace(-10.0, 0.0, num=201), ticks=[-10, -7.5, -5, -2.5, 0])
+                cbar.ax.set_xlabel("Q-values", rotation=0, va="top")
+
+                im = axs.flat[1].imshow(first_Q_val_array[60, 0, :, :], interpolation="gaussian", cmap='viridis', vmin=-10, vmax=0)
+
+                # Create tick labels
+                x_label_list = ['0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0', '1.1']
+                y_label_list = ['1.05', '1.15', '1.25', '1.35', '1.45', '1.55']
+                axs.flat[1].set_xticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5, 23.5, 27.5])
+                axs.flat[1].set_yticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5])
+                axs.flat[1].set_xticklabels(x_label_list)
+                axs.flat[1].set_yticklabels(y_label_list)
+
+                # Create colorbars
+                cbar = axs.flat[1].figure.colorbar(im, ax=axs.flat[1], orientation="horizontal", boundaries=np.linspace(-10.0, 0.0, num=201), ticks=[-10, -7.5, -5, -2.5, 0])
+                cbar.ax.set_xlabel("Q-values", rotation=0, va="top")
+                
+
                 fig.tight_layout()
                 Path("./figures").mkdir(parents=True, exist_ok=True)
 
                 plt.savefig("./figures/" + dates[j] + "_Q_vals_layer_0.jpg", dpi=400, facecolor='w', edgecolor='w',
                     orientation='landscape',transparent=False, bbox_inches='tight')
                 #plt.show()
+                
 
             # Layer 1
             if not np.array_equal(first_Q_val_array[0, 1, :, :], np.ones((20,28))):
@@ -209,19 +250,54 @@ for j in range(len(date_paths)):
 
                 methods = ['gaussian']
 
-                fig, axs = plt.subplots(nrows=num, ncols=num, figsize=(10, 10),
-                                        subplot_kw={'xticks': [], 'yticks': []})
+                fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 5),)
 
+                mpl.style.use('default')
+                '''
                 for l in range(first_Q_val_array.shape[0]):
-                    im = axs.flat[l].imshow(first_Q_val_array[l, 1, :, :], interpolation="gaussian", cmap='viridis', vmin=-10, vmax=0)
+                    im = axs.flat[l].imshow(first_Q_val_array[l, 1, :, :], interpolation="gaussian", cmap='viridis', vmin=-7.5, vmax=-2.5)
+
+                    # Create tick labels
+                    x_label_list = ['0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0', '1.1']
+                    y_label_list = ['1.05', '1.15', '1.25', '1.35', '1.45', '1.55']
+                    axs.flat[l].set_xticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5, 23.5, 27.5])
+                    axs.flat[l].set_yticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5])
+                    axs.flat[l].set_xticklabels(x_label_list)
+                    axs.flat[l].set_yticklabels(y_label_list)
+
+                    # Create colorbars
+                    cbar = axs.flat[l].figure.colorbar(im, ax=axs.flat[l], orientation="horizontal", boundaries=np.linspace(-7.5, -2.5, num=201), ticks=[-7.5, -2.5])
+                    cbar.ax.set_xlabel("Q-values", rotation=0, va="bottom")
+                '''
+                
+                im = axs.flat[0].imshow(first_Q_val_array[0, 1, :, :], interpolation="gaussian", cmap='viridis', vmin=-7.5, vmax=-2.5)
+
+                # Create tick labels
+                x_label_list = ['0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0', '1.1']
+                y_label_list = ['1.05', '1.15', '1.25', '1.35', '1.45', '1.55']
+                axs.flat[0].set_xticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5, 23.5, 27.5])
+                axs.flat[0].set_yticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5])
+                axs.flat[0].set_xticklabels(x_label_list)
+                axs.flat[0].set_yticklabels(y_label_list)
 
                 # Create colorbars
-                for l in range(first_Q_val_array.shape[0]):
-                    cbar = axs.flat[l].figure.colorbar(im, ax=axs.flat[l], orientation="horizontal", boundaries=np.linspace(-10.0, 0.0, num=201), ticks=[-10, 0])
-                    cbar.ax.set_xlabel("Q-values", rotation=0, va="top")
+                cbar = axs.flat[0].figure.colorbar(im, ax=axs.flat[0], orientation="horizontal", boundaries=np.linspace(-7.5, -2.5, num=201), ticks=[-7.5, -5, -2.5])
+                cbar.ax.set_xlabel("Q-values", rotation=0, va="top")
 
-                #plt.tight_layout()
-                fig.set_size_inches(10, 10)
+                im = axs.flat[1].imshow(first_Q_val_array[60, 1, :, :], interpolation="gaussian", cmap='viridis', vmin=-7.5, vmax=-2.5)
+
+                # Create tick labels
+                x_label_list = ['0.4', '0.5', '0.6', '0.7', '0.8', '0.9', '1.0', '1.1']
+                y_label_list = ['1.05', '1.15', '1.25', '1.35', '1.45', '1.55']
+                axs.flat[1].set_xticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5, 23.5, 27.5])
+                axs.flat[1].set_yticks([-0.5, 3.5, 7.5, 11.5, 15.5, 19.5])
+                axs.flat[1].set_xticklabels(x_label_list)
+                axs.flat[1].set_yticklabels(y_label_list)
+
+                # Create colorbars
+                cbar = axs.flat[1].figure.colorbar(im, ax=axs.flat[1], orientation="horizontal", boundaries=np.linspace(-7.5, -2.5, num=201), ticks=[-7.5, -5, -2.5])
+                cbar.ax.set_xlabel("Q-values", rotation=0, va="top")
+
                 fig.tight_layout()
                 Path("./figures").mkdir(parents=True, exist_ok=True)
 

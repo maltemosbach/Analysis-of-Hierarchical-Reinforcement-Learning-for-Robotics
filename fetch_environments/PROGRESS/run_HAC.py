@@ -1,7 +1,3 @@
-"""
-"run_HAC.py" executes the training schedule for the agent.  By default, the agent will alternate between exploration and testing phases.  The number of episodes in the exploration phase can be configured in section 3 of "design_agent_and_env.py" file.  If the user prefers to only explore or only test, the user can enter the command-line options ""--train_only" or "--test", respectively.  The full list of command-line options is available in the "options.py" file.
-"""
-
 import pickle as cpickle
 import agent as Agent
 from utils import print_summary
@@ -13,6 +9,16 @@ import numpy as np
 
 
 def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
+    """Script that performs one run alternating between training and testing the agent unless 
+    specified differently.
+        Args:
+            FLAGS: flags determining how the algorithm is run
+            env: environment the agent is run on
+            agent: the HAC agent
+            writer: writer for tensorboard logging
+            sess: TensorFlow session
+            NUM_BATCH (int): total number of batches to be run
+        """
 
     TEST_FREQ = 2
     num_test_episodes = 10
@@ -94,7 +100,7 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
             # For layer 1 the position of the gripper is the closer to the bottom right and the actions (subgoals) in the plane
             # are evaluated.
             if env.name == "FetchReach-v1":
-                g = np.array([1.2286, 0.65, 0.5])
+                g = np.array([1.345, 0.73, 0.45])
                 o = np.zeros([20, 28, 10])
 
                 for i in range(20):
@@ -103,8 +109,8 @@ def run_HAC(FLAGS,env,agent,writer,sess, NUM_BATCH):
                         Q_vals_layer_0[i, j] = agent.layers[0].policy.get_Q_values_pi(o[i, j, :], g, np.array([0, 0, 0, 0]), use_target_net=True)
 
                 if agent.hparams["layers"] > 1:
-                    g = np.array([1.15, 0.54, 0.5])
-                    o = np.array([1.265, 0.6, 0.5,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+                    g = np.array([1.45, 0.95, 0.45])
+                    o = np.array([1.21, 0.57, 0.42,  0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
                     u = np.empty((20, 28, 3))
 
                     for i in range(20):

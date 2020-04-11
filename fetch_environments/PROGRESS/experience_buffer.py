@@ -4,6 +4,13 @@ import time
 class ExperienceBuffer():
 
     def __init__(self, max_buffer_size, batch_size):
+        """Original HAC experience buffer
+        Args:
+            max_buffer_size (int): maximum buffer size in transitions
+            batch_size (int): size of the batches that should be sampled
+        """
+
+
         self.size = 0
         self.max_buffer_size = max_buffer_size
         self.experiences = []
