@@ -13,7 +13,8 @@ from critic import Critic
 from criticTD3 import CriticTD3
 from actorTD3 import ActorTD3
 
-from baselines.her.util import convert_episode_to_batch_major
+from baselines.her.util import (
+    import_function, store_args, flatten_grads, transitions_in_episode_batch, convert_episode_to_batch_major)
 from her_sampler import make_sample_her_transitions
 
 
@@ -627,12 +628,49 @@ class Layer():
                         episode = convert_episode_to_batch_major(episode)
                         
                         if self.hparams["buffer"][self.layer_number] == "replay":
-                            self.replay_buffer.store_episode(episode)
+                            self.store_episode_replay_buffer(episode)
                         elif self.hparams["buffer"][self.layer_number] == "transitions":
-                            self.transitions_buffer.store_episode(episode, goal_status[self.layer_number])
+                            self.store_episode_transitions_buffer(episode, goal_status[self.layer_number])
 
                     return goal_status, max_lay_achieved
 
+
+    def store_episode_replay_buffer(self, episode_batch, update_stats=True):
+        """
+        episode_batch: array of batch_size x (T or T+1) x dim_key
+                       'o' is of size T+1, others are of size T
+        """
+
+        self.replay_buffer.store_episode(episode_batch)
+
+        if update_stats:
+            # add transitions to normalizer
+            episode_batch['o_2'] = episode_batch['o'][:, 1:, :]
+            episode_batch['ag_2'] = episode_batch['ag'][:, 1:, :]
+            num_normalizing_transitions = transitions_in_episode_batch(episode_batch)
+            transitions = self.sample_transitions(episode_batch, num_normalizing_transitions)
+
+            self.policy.o_stats.update(transitions['o'])
+            self.policy.g_stats.update(transitions['g'])
+
+            self.policy.o_stats.recompute_stats()
+            self.policy.g_stats.recompute_stats()
+
+
+    def store_episode_transitions_buffer(self, episode_batch, goal_status, update_stats=True):
+        """
+        episode_batch: array of batch_size x (T or T+1) x dim_key
+                       'o' is of size T+1, others are of size T
+        """
+
+        self.transitions_buffer.store_episode(episode_batch, goal_status)
+
+        if update_stats and self.policy is not None:
+            self.policy.o_stats.update(episode_batch['o'])
+            self.policy.g_stats.update(episode_batch['g'])
+
+            self.policy.o_stats.recompute_stats()
+            self.policy.g_stats.recompute_stats()
 
 
     # Update actor and critic networks

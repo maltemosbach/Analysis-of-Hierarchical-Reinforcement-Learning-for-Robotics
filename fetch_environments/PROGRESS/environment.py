@@ -72,7 +72,6 @@ class Environment():
 
     # Execute low-level action for number of frames specified by num_frames_skip
     def execute_action(self, action):
-        action = np.zeros(4)
         self.obs, self.rewards, self.done, self.info = self.gymEnv.step(action)
         self.numTimesteps += 1
         #print("Timestep:", self.numTimesteps)

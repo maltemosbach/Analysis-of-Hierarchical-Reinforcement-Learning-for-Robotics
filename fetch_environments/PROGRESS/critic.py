@@ -31,7 +31,9 @@ class Critic():
         # running averages
         with tf.variable_scope('features_stats_critic_1') as vs:
             self.f_stats = Normalizer(self.dimo+self.dimg+self.dimu, self.norm_eps, self.norm_clip, sess=self.sess)
-
+        # tensorboard logging
+        self.f_stats_mean = 0
+        self.f_stats_std = 0
 
 
         
@@ -163,7 +165,8 @@ class Critic():
 
         self.f_stats.update(concat)
         self.f_stats.recompute_stats()
-        #print('stats_f/mean_critic', np.mean(self.sess.run([self.f_stats.mean])))
+        self.f_stats_mean = np.mean(self.sess.run([self.f_stats.mean]))
+        self.f_stats_std = np.mean(self.sess.run([self.f_stats.std]))
 
         
 

@@ -240,6 +240,10 @@ class Agent():
                     self.writer.add_histogram('layer_1/critic_weights_target', self.layers[1].critic.target_weights[0].eval(session=self.sess), step)
                     self.writer.add_histogram('layer_1/actor_weights_main', self.layers[1].actor.weights[0].eval(session=self.sess), step)
                     self.writer.add_histogram('layer_1/actor_weights_target', self.layers[1].actor.target_weights[0].eval(session=self.sess), step)
+                    self.writer.add_scalar('layer_1/actor/stats_f/mean', self.layers[1].actor.f_stats_mean, step)
+                    self.writer.add_scalar('layer_1/actor/stats_f/std', self.layers[1].actor.f_stats_std, step)
+                    self.writer.add_scalar('layer_1/critic/stats_f/mean', self.layers[1].critic.f_stats_mean, step)
+                    self.writer.add_scalar('layer_1/critic/stats_f/std', self.layers[1].critic.f_stats_std, step)
 
                 elif self.hparams["modules"][1] == "TD3":
                     # Logging exemplary weight to verify transfer learning

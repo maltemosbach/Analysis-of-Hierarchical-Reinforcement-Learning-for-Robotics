@@ -219,7 +219,7 @@ class DDPG():
 
 
     # Get batch from original experience buffer in the form of the HER replay buffer
-    def sample_batch_experience_buffer(self, update_stats=True):
+    def sample_batch_experience_buffer(self):
         if self.experience_buffer.size >= self.batch_size:
             old_states, actions, rewards, new_states, goals, is_terminals = self.experience_buffer.get_batch()
 
@@ -236,17 +236,10 @@ class DDPG():
             transitions["o_2"], transitions["g_2"] = self._preprocess_og(o_2, g)
             #transitions_batch = [goals, old_states, actions, new_states, goals, rewards]
 
-            if update_stats:
-                self.o_stats.update(transitions['o'])
-                self.g_stats.update(transitions['g'])
-
-                self.o_stats.recompute_stats()
-                self.g_stats.recompute_stats()
-
-                self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
-                self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
-                self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
-                self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
+            self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
+            self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
+            self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
+            self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
 
 
             transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
@@ -259,7 +252,7 @@ class DDPG():
 
 
     # Sample batch from HER replay buffer using new HER_Sampler
-    def sample_batch_replay_buffer(self, update_stats=True):
+    def sample_batch_replay_buffer(self):
 
         transitions = self.replay_buffer.sample(self.batch_size)
 
@@ -268,24 +261,18 @@ class DDPG():
         transitions['o'], transitions['g'] = self._preprocess_og(o, g)
         transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
 
-        if update_stats:
-                self.o_stats.update(transitions['o'])
-                self.g_stats.update(transitions['g'])
 
-                self.o_stats.recompute_stats()
-                self.g_stats.recompute_stats()
-
-                self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
-                self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
-                self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
-                self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
+        self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
+        self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
+        self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
+        self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
 
         transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
         return transitions_batch
 
 
     # Sample batch from my new transitions buffer
-    def sample_batch_transitions_buffer(self, update_stats=True):
+    def sample_batch_transitions_buffer(self):
 
         transitions = self.transitions_buffer.sample(self.batch_size)
 
@@ -293,17 +280,10 @@ class DDPG():
         transitions['o'], transitions['g'] = self._preprocess_og(o, g)
         transitions['o_2'], transitions['g_2'] = self._preprocess_og(o_2, g)
 
-        if update_stats:
-                self.o_stats.update(transitions['o'])
-                self.g_stats.update(transitions['g'])
-
-                self.o_stats.recompute_stats()
-                self.g_stats.recompute_stats()
-
-                self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
-                self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
-                self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
-                self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
+        self.o_stats_mean = np.mean(self.sess.run([self.o_stats.mean]))
+        self.o_stats_std = np.mean(self.sess.run([self.o_stats.std]))
+        self.g_stats_mean = np.mean(self.sess.run([self.g_stats.mean]))
+        self.g_stats_std = np.mean(self.sess.run([self.g_stats.std]))
 
         transitions_batch = [transitions[key] for key in self.stage_shapes.keys()]
 
