@@ -153,20 +153,6 @@ class Critic():
                     self.wanted_qs: wanted_qs 
                 })
 
-        o = np.asarray(old_states)
-        g = np.asarray(goals)
-        u = np.asarray(old_actions)
-
-        #print("o.shape:", o.shape)
-        #print("g.shape:", g.shape)
-        #print("u.shape:", u.shape)
-        concat = np.concatenate((old_states, goals, old_actions), axis=1)
-        #print("concat.shape:", concat.shape)
-
-        self.f_stats.update(concat)
-        self.f_stats.recompute_stats()
-        self.f_stats_mean = np.mean(self.sess.run([self.f_stats.mean]))
-        self.f_stats_std = np.mean(self.sess.run([self.f_stats.std]))
 
         
 

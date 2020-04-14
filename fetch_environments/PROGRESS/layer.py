@@ -672,6 +672,21 @@ class Layer():
             self.policy.o_stats.recompute_stats()
             self.policy.g_stats.recompute_stats()
 
+        elif update_stats and self.actor is not None and self.critic is not None:
+            features_actor = np.concatenate((episode_batch['o'][0, 1:], episode_batch['g'][0]), axis=1)
+            features_critic = np.concatenate((episode_batch['o'][0, 1:], episode_batch['g'][0], episode_batch['u'][0]), axis=1)
+
+            self.actor.f_stats.update(features_actor)
+            self.critic.f_stats.update(features_critic)
+
+            self.actor.f_stats.recompute_stats()
+            self.critic.f_stats.recompute_stats()
+
+            self.actor.f_stats_mean = np.mean(self.sess.run([self.actor.f_stats.mean]))
+            self.actor.f_stats_std = np.mean(self.sess.run([self.actor.f_stats.std]))
+            self.critic.f_stats_mean = np.mean(self.sess.run([self.critic.f_stats.mean]))
+            self.critic.f_stats_std = np.mean(self.sess.run([self.critic.f_stats.std]))
+
 
     # Update actor and critic networks
     def learn(self, num_updates):

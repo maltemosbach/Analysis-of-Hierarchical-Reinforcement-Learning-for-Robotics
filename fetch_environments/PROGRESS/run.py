@@ -33,10 +33,10 @@ hyperparameters = {
         "ac_n"         : [0.2],
         "sg_n"         : [0.3],
         "replay_k"     : [4],
-        "layers"       : [1, 2],
+        "layers"       : [2],
         "use_target"   : [[False, True]],
         "sg_test_perc" : [0.1],
-        "buffer"       : [['transitions', 'transitions'], ['replay', 'transitions']],
+        "buffer"       : [['transitions', 'transitions']],
         "samp_str"     : ['HAC'],
         "modules"      : [['ddpg', 'actorcritic']]
 
@@ -48,13 +48,13 @@ Parameters for the runs
     NUM_RUNS (int): Number of runs for each hyperparameter combination
     NUM_BATCH (int): Total number of batches for each run (one batch is made up of 10 (during testing) or 100 (during exploration) full episodes)
     FLAGS.time_scale (int): Max sequence length in which each policy will specialize
-    FLAGS>max_actions (int): Max number of atomic actions
+    FLAGS.max_actions (int): Max number of atomic actions
 """
 NUM_RUNS = 2
-NUM_BATCH = 101
+NUM_BATCH = 151
 
-FLAGS.time_scale = 10
-FLAGS.max_actions = 50
+FLAGS.time_scale = 5
+FLAGS.max_actions = 25
 
 
 """ 3. ADDITIONAL OPTIONS

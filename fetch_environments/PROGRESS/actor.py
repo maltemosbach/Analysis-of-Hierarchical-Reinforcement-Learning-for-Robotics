@@ -126,20 +126,6 @@ class Actor():
                     self.action_derivs: action_derivs
                 })
 
-        o = np.asarray(state)
-        g = np.asarray(goal)
-
-        #print("o.shape:", o.shape)
-        #print("g.shape:", g.shape)
-        concat = np.concatenate((state, goal), axis=1)
-        #print("concat.shape:", concat.shape)
-
-        self.f_stats.update(concat)
-        self.f_stats.recompute_stats()
-
-        self.f_stats_mean = np.mean(self.sess.run([self.f_stats.mean]))
-        self.f_stats_std = np.mean(self.sess.run([self.f_stats.std]))
-
 
         return len(weights)
 
