@@ -1,0 +1,3 @@
+model_checkpoint_path: "/Users/maltemosbach/Desktop/testcase results/P3_fP/models/lowest_layer/HAC.ckpt-99"
+all_model_checkpoint_paths: "/Users/maltemosbach/Desktop/testcase results/P3_fP/models/HAC.ckpt-99"
+all_model_checkpoint_paths: "/Users/maltemosbach/Desktop/testcase results/P3_fP/models/lowest_layer/HAC.ckpt-99"
