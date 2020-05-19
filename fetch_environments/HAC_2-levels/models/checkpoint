@@ -1,0 +1,3 @@
+model_checkpoint_path: "/Users/maltemosbach/githubProjects/Analysis-of-Hierarchical-Reinforcement-Learning-for-Robotics/fetch_environments/HAC_2-levels/models/HAC.ckpt-9"
+all_model_checkpoint_paths: "/Users/maltemosbach/githubProjects/Analysis-of-Hierarchical-Reinforcement-Learning-for-Robotics/fetch_environments/HAC_2-levels/models/lowest_layer/HAC.ckpt-9"
+all_model_checkpoint_paths: "/Users/maltemosbach/githubProjects/Analysis-of-Hierarchical-Reinforcement-Learning-for-Robotics/fetch_environments/HAC_2-levels/models/HAC.ckpt-9"
