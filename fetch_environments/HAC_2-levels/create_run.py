@@ -1,6 +1,4 @@
-import pickle as cpickle
 import agent as Agent
-from utils import print_summary
 from tensorboardX import SummaryWriter
 from tensorboard.plugins.hparams import api as hp
 import tensorflow as tf
@@ -21,13 +19,11 @@ def create_run(FLAGS,env,agent,writer,sess, NUM_BATCH):
         """
 
     TEST_FREQ = 2
-    num_test_episodes = 10
+    num_test_episodes = FLAGS.num_test_episodes
 
     success_rate_plt = np.zeros(np.ceil(NUM_BATCH/2).astype(int))
     critic_loss_layer0 = -1*np.ones(np.ceil(NUM_BATCH/2).astype(int))
     critic_loss_layer1 = -1*np.ones(np.ceil(NUM_BATCH/2).astype(int))
-    # Print task summary
-    print_summary(FLAGS,env)
     ind = 0
 
 
@@ -44,7 +40,7 @@ def create_run(FLAGS,env,agent,writer,sess, NUM_BATCH):
      
     for batch in range(NUM_BATCH):
 
-        num_episodes = agent.other_params["num_exploration_episodes"]
+        num_episodes = FLAGS.num_exploration_episodes
         
         # Evaluate policy every TEST_FREQ batches if interleaving training and testing
         if mix_train_test and batch % TEST_FREQ == 0:

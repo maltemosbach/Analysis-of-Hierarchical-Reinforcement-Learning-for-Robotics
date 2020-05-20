@@ -21,7 +21,7 @@ def goal_distance(goal_a, goal_b):
     return np.linalg.norm(goal_a - goal_b, axis=-1)
 
 class Layer():
-    def __init__(self, layer_number, FLAGS, env, sess, writer, agent_params, hparams):
+    def __init__(self, layer_number, FLAGS, env, sess, writer, hparams):
         """Class representing one layer of the hierarchical agent.
         Args:
             layer_number (int): number of this layer with 0 being the lowest layer
@@ -29,7 +29,6 @@ class Layer():
             env: environment object
             sess: TensorFlow session
             writer: summary writer
-            agent_params: parameters of the agent
             hparams: hyperparameters from initialize HAC
         """
 
@@ -126,7 +125,7 @@ class Layer():
         # Create flag to indicate when layer has ran out of attempts to achieve goal.  This will be important for subgoal testing
         self.maxed_out = False
 
-        self.subgoal_penalty = agent_params["subgoal_penalty"]
+        self.subgoal_penalty = FLAGS.subgoal_penalty
 
 
     # Add noise to provided action

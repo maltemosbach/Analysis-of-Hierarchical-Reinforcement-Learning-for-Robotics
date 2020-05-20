@@ -1,7 +1,6 @@
 import numpy as np
 from layer import Layer
 from environment import Environment
-import pickle as cpickle
 import tensorflow as tf
 import os
 from tensorboardX import SummaryWriter
@@ -15,7 +14,7 @@ def goal_distance(goal_a, goal_b):
 
 # Below class instantiates an agent
 class Agent():
-    def __init__(self,FLAGS, env, agent_params, writer, writer_graph, sess, hparams):
+    def __init__(self,FLAGS, env, writer, writer_graph, sess, hparams):
 
         self.FLAGS = FLAGS
         self.sess = sess
@@ -27,7 +26,7 @@ class Agent():
         self.subgoal_test_perc = hparams["sg_test_perc"]
 
         # Create agent with number of levels specified by user
-        self.layers = [Layer(i,FLAGS,env,self.sess,self.writer,agent_params,hparams) for i in range(hparams["layers"])]
+        self.layers = [Layer(i,FLAGS,env,self.sess,self.writer,hparams) for i in range(hparams["layers"])]
 
 
         # Below attributes will be used help save network parameters
@@ -52,11 +51,6 @@ class Agent():
 
         # Below hyperparameter specifies number of Q-value updates made after each episode
         self.num_updates = 40
-
-        # Below parameters will be used to store performance results
-        self.performance_log = []
-
-        self.other_params = agent_params
 
 
     # Determine whether or not each layer's goal was achieved.  Also, if applicable, return the highest level whose goal was achieved.
@@ -184,16 +178,6 @@ class Agent():
 
         # Return whether end goal was achieved
         return goal_status[self.hparams["layers"]-1]
-
-
-    # Save performance evaluations
-    def log_performance(self, success_rate):
-
-        # Add latest success_rate to list
-        self.performance_log.append(success_rate)
-
-        # Save log
-        cpickle.dump(self.performance_log,open("performance_log.p","wb"))
 
 
     # Log any variables to tensorboard

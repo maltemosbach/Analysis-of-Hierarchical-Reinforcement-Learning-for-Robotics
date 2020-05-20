@@ -1,7 +1,7 @@
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 import numpy as np
-from NN_layer import nn_layer
+from utils import nn_layer
 from baselines.her.normalizer import Normalizer
 
 class Critic():

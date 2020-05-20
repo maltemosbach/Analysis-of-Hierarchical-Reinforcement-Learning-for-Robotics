@@ -5,7 +5,7 @@ This is the starting file for all runs. The command line options are being proce
 import multiprocessing
 from datetime import datetime
 from init_runs import init_runs
-from utils import get_combinations
+from utils import _get_combinations
 from options import parse_options
 from pathlib import Path
 
@@ -49,12 +49,19 @@ Parameters for the runs
     NUM_BATCH (int): Total number of batches for each run (one batch is made up of 10 (during testing) or 100 (during exploration) full episodes)
     FLAGS.time_scale (int): Max sequence length in which each policy will specialize
     FLAGS.max_actions (int): Max number of atomic actions
+    FLAGS.subgoal_penalty (float): Penalty given to higher layer in subgoal testing transitions where the proposed goal is not reached
+    FLAGS.num_exploration_episodes (int): Number of training episodes in one batch/ epoch
+    FLAGS.num_test_episodes (int): Number of testing episodes after every epoch of training
 """
 NUM_RUNS = 1
 NUM_BATCH = 101
 
 FLAGS.time_scale = 10
 FLAGS.max_actions = 50
+
+FLAGS.subgoal_penalty = -FLAGS.time_scale
+FLAGS.num_exploration_episodes = 10
+FLAGS.num_test_episodes = 20
 
 
 """ 3. ADDITIONAL OPTIONS
@@ -76,7 +83,7 @@ save_models = True
 
 
 
-hparams = get_combinations(hyperparameters)
+hparams = _get_combinations(hyperparameters)
 
 if FLAGS.test == False and FLAGS.retrain == False:
     FLAGS.retrain = True
